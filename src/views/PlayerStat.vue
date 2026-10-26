@@ -6,6 +6,8 @@ import { useHiveStats } from '../composables/useHiveStats'
 const username = ref('')
 const selectedGame = ref('all')
 
+const IGNORED_KEYS = ['UUID', 'first_played', 'human_index']
+
 const { stats, loading, error, fetchPlayerStats } = useHiveStats()
 
 const games = [
@@ -64,11 +66,29 @@ const currentSingleGameStats = computed(() => {
   if (!gameData || Array.isArray(gameData)) return null
   return gameData
 })
+
+const formatStatName = (key) => {
+  if (key === 'xp') return 'XP'
+  return key
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
+const getValidStats = (gameData) => {
+  if (!gameData || Array.isArray(gameData)) return {}
+  return Object.fromEntries(
+    Object.entries(gameData).filter(
+      ([key, val]) => !IGNORED_KEYS.includes(key) && (typeof val === 'number' || typeof val === 'string')
+    )
+  )
+}
+
 </script>
 
 <template>
   <div class="p-6">
-    <h2>Hive Player Stats</h2>
+    <h2 class="my-4">Hive Player Stats</h2>
 
     <form @submit.prevent="handleSearch" class="search-bar">
       <input
@@ -76,11 +96,11 @@ const currentSingleGameStats = computed(() => {
         type="text"
         placeholder="Enter Xbox Gamertag or UUID..."
         required
-        class="p-1 border w-64"
+        class="px-3 py-1 h-10 border rounded-l-2xl rounded-bl-2xl w-64"
       />
       
       <!-- Changing this now updates the view immediately without hitting Search -->
-      <select v-model="selectedGame">
+      <select v-model="selectedGame" class="px-3 py-1 h-10 rounded-r-2xl rounded-br-2xl border">
         <option v-for="g in games" :key="g.code" :value="g.code">
           {{ g.name }}
         </option>
@@ -92,11 +112,15 @@ const currentSingleGameStats = computed(() => {
     </form>
 
     <div v-if="error" class="error-box">{{ error }}</div>
+    <br><hr>
 
+    
     <!-- Results Display -->
     <div v-if="stats" class="results-card">
-      <h3>Profile: {{ stats.main?.username || username }}</h3>
-      <p v-if="stats.main?.rank"><strong>Rank:</strong> {{ stats.main.rank }}</p>
+      <div class="py-3">
+        <h3>Profile: {{ stats.main?.username_cc || username }}</h3>
+        <p v-if="stats.main?.rank"><strong>Rank:</strong> {{ stats.main.rank }}</p>
+      </div>      
 
       <!-- 1. When 'All Games' is selected -->
       <hr>
@@ -108,7 +132,7 @@ const currentSingleGameStats = computed(() => {
           > 
             
             <h4>{{ GAME_NAMES[gameCode] || gameCode.toUpperCase() }}</h4>
-            <ul>
+            <!-- <ul>
               <li v-if="gameData.xp !== undefined"><strong>XP:</strong> {{ gameData.xp }}</li>
               <li v-if="gameData.played !== undefined"><strong>Played:</strong> {{ gameData.played }}</li>
               <li v-if="gameData.victories !== undefined"><strong>Victories:</strong> {{ gameData.victories }}</li>
@@ -121,6 +145,11 @@ const currentSingleGameStats = computed(() => {
               <li v-if="gameCode == 'ctf' || gameCode == 'wars' || gameCode == 'bed' || gameCode == 'sky' || gameCode == 'sg'"><strong>K/D Ratio:</strong> {{ (gameData.kills / gameData.deaths).toFixed(2) }}</li>
               <li v-if="gameCode == 'ctf' || gameCode == 'wars' || gameCode == 'bed' || gameCode == 'sky' || gameCode == 'sg'"><strong>Average kills per round:</strong> {{ (gameData.kills / gameData.played).toFixed(2) }}</li>
               <li v-if="gameCode == 'ctf' || gameCode == 'wars' || gameCode == 'bed' || gameCode == 'sky' || gameCode == 'sg'"><strong>Average deaths per round:</strong> {{ (gameData.deaths / gameData.played).toFixed(2) }}</li>
+            </ul> -->
+            <ul>
+              <li v-for="(val, statKey) in getValidStats(gameData)" :key="statKey">
+                <strong>{{ formatStatName(statKey) }}:</strong> {{ val.toLocaleString() }}
+              </li>
             </ul>
             <br>
           </div>
