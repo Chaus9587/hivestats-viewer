@@ -132,20 +132,6 @@ const getValidStats = (gameData) => {
           > 
             
             <h4>{{ GAME_NAMES[gameCode] || gameCode.toUpperCase() }}</h4>
-            <!-- <ul>
-              <li v-if="gameData.xp !== undefined"><strong>XP:</strong> {{ gameData.xp }}</li>
-              <li v-if="gameData.played !== undefined"><strong>Played:</strong> {{ gameData.played }}</li>
-              <li v-if="gameData.victories !== undefined"><strong>Victories:</strong> {{ gameData.victories }}</li>
-              <li v-if="gameData.played !== undefined && gameData.victories !== undefined"><strong>Win Percentage:</strong> {{ (gameData.victories / gameData.played * 100).toFixed(2) }}%</li>
-
-
-              <li v-if="gameData.kills !== undefined"><strong>Kills:</strong> {{ gameData.kills }}</li>
-              <li v-if="gameData.deaths !== undefined"><strong>Deaths:</strong> {{ gameData.deaths }}</li>
-              <li v-if="gameData.assists !== undefined"><strong>Assists:</strong> {{ gameData.assists }}</li>
-              <li v-if="gameCode == 'ctf' || gameCode == 'wars' || gameCode == 'bed' || gameCode == 'sky' || gameCode == 'sg'"><strong>K/D Ratio:</strong> {{ (gameData.kills / gameData.deaths).toFixed(2) }}</li>
-              <li v-if="gameCode == 'ctf' || gameCode == 'wars' || gameCode == 'bed' || gameCode == 'sky' || gameCode == 'sg'"><strong>Average kills per round:</strong> {{ (gameData.kills / gameData.played).toFixed(2) }}</li>
-              <li v-if="gameCode == 'ctf' || gameCode == 'wars' || gameCode == 'bed' || gameCode == 'sky' || gameCode == 'sg'"><strong>Average deaths per round:</strong> {{ (gameData.deaths / gameData.played).toFixed(2) }}</li>
-            </ul> -->
             <ul>
               <li v-for="(val, statKey) in getValidStats(gameData)" :key="statKey">
                 <strong>{{ formatStatName(statKey) }}:</strong> {{ val.toLocaleString() }}
@@ -159,7 +145,7 @@ const getValidStats = (gameData) => {
       <!-- 2. When a Single Game is selected (Reads instantly from cached stats) -->
       <div v-else>
         <h4>{{ selectedGame.toUpperCase() }} Stats</h4>
-        <ul v-if="currentSingleGameStats">
+        <!-- <ul v-if="currentSingleGameStats">
           <li v-if="currentSingleGameStats.xp !== undefined"><strong>XP:</strong> {{ currentSingleGameStats.xp }}</li>
           <li v-if="currentSingleGameStats.played !== undefined"><strong>Games Played:</strong> {{ currentSingleGameStats.played }}</li>
           <li v-if="currentSingleGameStats.victories !== undefined"><strong>Victories:</strong> {{ currentSingleGameStats.victories }}</li>
@@ -170,6 +156,11 @@ const getValidStats = (gameData) => {
           <li v-if="selectedGame == 'ctf' || selectedGame == 'wars' || selectedGame == 'bed' || selectedGame == 'sky' || selectedGame == 'sg'"><strong>K/D Ratio:</strong> {{ (currentSingleGameStats.kills / currentSingleGameStats.deaths).toFixed(2) }}</li>
           <li v-if="selectedGame == 'ctf' || selectedGame == 'wars' || selectedGame == 'bed' || selectedGame == 'sky' || selectedGame == 'sg'"><strong>Average kills per round:</strong> {{ (currentSingleGameStats.kills / currentSingleGameStats.played).toFixed(2) }}</li>
           <li v-if="selectedGame == 'ctf' || selectedGame == 'wars' || selectedGame == 'bed' || selectedGame == 'sky' || selectedGame == 'sg'"><strong>Average deaths per round:</strong> {{ (currentSingleGameStats.deaths / currentSingleGameStats.played).toFixed(2) }}</li>
+        </ul> -->
+        <ul v-if="currentSingleGameStats">
+          <li v-for="(val, statKey) in getValidStats(currentSingleGameStats)" :key="statKey">
+            <strong>{{ formatStatName(statKey) }}:</strong> {{ val.toLocaleString() }}
+          </li>
         </ul>
         <p v-else>This player has no recorded stats for {{ selectedGame.toUpperCase() }}.</p>
       </div>
