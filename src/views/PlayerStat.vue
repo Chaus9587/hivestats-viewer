@@ -32,26 +32,8 @@ const games = [
   { code: 'mob', name: 'MobGame' }
 ]
 
-const GAME_NAMES = {
-  bed: 'BedWars',
-  sky: 'SkyWars',
-  wars: 'Treasure Wars',
-  murder: 'Murder Mystery',
-  hide: 'Hide and Seek',
-  dr: 'DeathRun',
-  sg: 'Survival Games',
-  build: 'Just Build',
-  ctf: 'Capture the Flag',
-  bridge: 'The Bridge',
-  grav: 'Gravity',
-  party: 'Block Party',
-  drop: 'Block Drop',
-  ground: 'Ground Wars',
-  parkour: 'Parkour Worlds',
-
-  gi: 'Ghost Invasion',
-  mob: 'MobGame'
-}
+// Get the name of a game by its code
+const getGameName = (code) => games.find((g) => g.code === code)?.name || code.toUpperCase()
 
 const handleSearch = () => {
   fetchPlayerStats(username.value)
@@ -84,6 +66,7 @@ const getValidStats = (gameData) => {
   )
 }
 
+
 </script>
 
 <template>
@@ -105,8 +88,13 @@ const getValidStats = (gameData) => {
           {{ g.name }}
         </option>
       </select>
+      
+      <br>
 
-      <button type="submit" :disabled="loading">
+      <button 
+        type="submit" 
+        :disabled="loading"
+        class="py-2 px-4 mt-4 bg-neutral-700 text-white rounded-2xl dark:bg-neutral-200 dark:text-black hover:cursor-pointer">
         {{ loading ? 'Fetching...' : 'Search' }}
       </button>
     </form>
@@ -120,6 +108,8 @@ const getValidStats = (gameData) => {
       <div class="py-3">
         <h3>Profile: {{ stats.main?.username_cc || username }}</h3>
         <p v-if="stats.main?.rank"><strong>Rank:</strong> {{ stats.main.rank }}</p>
+        <p v-if="stats.main?.first_played"><strong>First Played:</strong> {{ new Date(stats.main.first_played * 1000).toLocaleDateString() }}</p>
+        <img v-if="stats.main?.equipped_avatar" :src="stats.main.equipped_avatar.url"  class="w-16 h-16 rounded-2xl">
       </div>      
 
       <!-- 1. When 'All Games' is selected -->
@@ -131,7 +121,7 @@ const getValidStats = (gameData) => {
             class="game-card"
           > 
             
-            <h4>{{ GAME_NAMES[gameCode] || gameCode.toUpperCase() }}</h4>
+            <h4>{{ getGameName(gameCode) }}</h4>
             <ul>
               <li v-for="(val, statKey) in getValidStats(gameData)" :key="statKey">
                 <strong>{{ formatStatName(statKey) }}:</strong> {{ val.toLocaleString() }}
@@ -143,26 +133,14 @@ const getValidStats = (gameData) => {
       </div>
 
       <!-- 2. When a Single Game is selected (Reads instantly from cached stats) -->
-      <div v-else>
-        <h4>{{ selectedGame.toUpperCase() }} Stats</h4>
-        <!-- <ul v-if="currentSingleGameStats">
-          <li v-if="currentSingleGameStats.xp !== undefined"><strong>XP:</strong> {{ currentSingleGameStats.xp }}</li>
-          <li v-if="currentSingleGameStats.played !== undefined"><strong>Games Played:</strong> {{ currentSingleGameStats.played }}</li>
-          <li v-if="currentSingleGameStats.victories !== undefined"><strong>Victories:</strong> {{ currentSingleGameStats.victories }}</li>
-
-          <li v-if="currentSingleGameStats.kills !== undefined"><strong>Kills:</strong> {{ currentSingleGameStats.kills }}</li>
-          <li v-if="currentSingleGameStats.deaths !== undefined"><strong>Deaths:</strong> {{ currentSingleGameStats.deaths }}</li>
-          <li v-if="currentSingleGameStats.assists !== undefined"><strong>Assists:</strong> {{ currentSingleGameStats.assists }}</li>
-          <li v-if="selectedGame == 'ctf' || selectedGame == 'wars' || selectedGame == 'bed' || selectedGame == 'sky' || selectedGame == 'sg'"><strong>K/D Ratio:</strong> {{ (currentSingleGameStats.kills / currentSingleGameStats.deaths).toFixed(2) }}</li>
-          <li v-if="selectedGame == 'ctf' || selectedGame == 'wars' || selectedGame == 'bed' || selectedGame == 'sky' || selectedGame == 'sg'"><strong>Average kills per round:</strong> {{ (currentSingleGameStats.kills / currentSingleGameStats.played).toFixed(2) }}</li>
-          <li v-if="selectedGame == 'ctf' || selectedGame == 'wars' || selectedGame == 'bed' || selectedGame == 'sky' || selectedGame == 'sg'"><strong>Average deaths per round:</strong> {{ (currentSingleGameStats.deaths / currentSingleGameStats.played).toFixed(2) }}</li>
-        </ul> -->
+      <div v-else class="py-3">
+        <h4>{{ getGameName(selectedGame) }}</h4>
         <ul v-if="currentSingleGameStats">
           <li v-for="(val, statKey) in getValidStats(currentSingleGameStats)" :key="statKey">
             <strong>{{ formatStatName(statKey) }}:</strong> {{ val.toLocaleString() }}
           </li>
         </ul>
-        <p v-else>This player has no recorded stats for {{ selectedGame.toUpperCase() }}.</p>
+        <p v-else>This player has no recorded stats for {{ getGameName(selectedGame) }}.</p>
       </div>
     </div>
   </div>
