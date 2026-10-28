@@ -1,7 +1,7 @@
 <!-- src/components/PlayerStats.vue -->
 <script setup>
 import { ref, computed } from 'vue'
-import { useHiveStats } from '../composables/useHiveStats'
+import { useHiveStats } from '@/composables/useHiveStats'
 
 const username = ref('')
 const selectedGame = ref('all')
@@ -39,12 +39,12 @@ const handleSearch = () => {
   fetchPlayerStats(username.value)
 }
 
-// Computed helper to get the currently selected single game's data
+// Get game(s) stats based on what you've selected in dropdown menuq
 const currentSingleGameStats = computed(() => {
   if (!stats.value || selectedGame.value === 'all') return null
   const gameData = stats.value[selectedGame.value]
   
-  // Remember: PlayHive returns [] if the player has never played that mode
+  // Empty Array for gamemodes that have never played
   if (!gameData || Array.isArray(gameData)) return null
   return gameData
 })
@@ -71,9 +71,7 @@ const getValidStats = (gameData) => {
 
 <template>
   <div class="p-6">
-    <h2 class="my-4">Hive Player Stats</h2>
-
-    <form @submit.prevent="handleSearch" class="search-bar">
+    <form @submit.prevent="handleSearch" class="search-bar mt-5 md:mt-8 md:flex md:items-center md:justify-center">
       <input
         v-model="username"
         type="text"
@@ -94,7 +92,7 @@ const getValidStats = (gameData) => {
       <button 
         type="submit" 
         :disabled="loading"
-        class="py-2 px-4 mt-4 bg-neutral-700 text-white rounded-2xl dark:bg-neutral-200 dark:text-black hover:cursor-pointer">
+        class="py-2 px-6 mt-5 md:mt-0 md:ml-6 bg-neutral-700 text-white rounded-2xl dark:bg-neutral-200 dark:text-black hover:cursor-pointer">
         {{ loading ? 'Fetching...' : 'Search' }}
       </button>
     </form>
