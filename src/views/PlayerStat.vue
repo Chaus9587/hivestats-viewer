@@ -28,9 +28,9 @@ const games = [
   { code: 'drop', name: 'Block Drop' },
   { code: 'ground', name: 'Ground Wars' },
   { code: 'parkour', name: 'Parkour Worlds' },
-  
+
   { code: 'gi', name: 'Ghost Invasion' },
-  { code: 'mob', name: 'MobGame' }
+  { code: 'mob', name: 'MobGame' },
 ]
 
 const STAT_SCHEMA = [
@@ -43,7 +43,7 @@ const STAT_SCHEMA = [
     getValue: (d) =>
       typeof d.played === 'number' && typeof d.victories === 'number'
         ? d.played - d.victories
-        : undefined
+        : undefined,
   },
 
   // 2. Combat Stats (and stats related to ctf, sky, bed, sg)
@@ -58,7 +58,7 @@ const STAT_SCHEMA = [
     getValue: (d) =>
       typeof d.kills === 'number' && typeof d.deaths === 'number'
         ? (d.deaths > 0 ? d.kills / d.deaths : d.kills).toFixed(2)
-        : undefined
+        : undefined,
   },
   {
     key: 'avg_kills',
@@ -67,7 +67,7 @@ const STAT_SCHEMA = [
     getValue: (d) =>
       typeof d.kills === 'number' && typeof d.played === 'number' && d.played > 0
         ? (d.kills / d.played).toFixed(2)
-        : undefined
+        : undefined,
   },
   {
     key: 'avg_deaths',
@@ -76,7 +76,7 @@ const STAT_SCHEMA = [
     getValue: (d) =>
       typeof d.deaths === 'number' && typeof d.played === 'number' && d.played > 0
         ? (d.deaths / d.played).toFixed(2)
-        : undefined
+        : undefined,
   },
 
   // Stats for other modes
@@ -99,7 +99,7 @@ const STAT_SCHEMA = [
   // hide
   { key: 'hider_kills', label: 'Hider Kills' },
   { key: 'seeker_kills', label: 'Seeker Kills' },
-  
+
   // dr
   { key: 'checkpoints', label: 'Checkpoints' },
   { key: 'activated', label: 'Traps Activated' },
@@ -108,7 +108,7 @@ const STAT_SCHEMA = [
   { key: 'goals', label: 'Goals' },
 
   // 4. XP at the bottom
-  { key: 'xp', label: 'XP' }
+  { key: 'xp', label: 'XP' },
 ]
 
 // Get the name of a game by its code
@@ -118,7 +118,7 @@ const getGameName = (code) => games.find((g) => g.code === code)?.name || code.t
 const currentSingleGameStats = computed(() => {
   if (!stats.value || selectedGame.value === 'all') return null
   const gameData = stats.value[selectedGame.value]
-  
+
   // Empty Array for gamemodes that have never played
   if (!gameData || Array.isArray(gameData)) return null
   return gameData
@@ -128,14 +128,13 @@ const currentSingleGameStats = computed(() => {
 const getValidStats = (gameData, gameCode) => {
   if (!gameData || Array.isArray(gameData)) return []
 
-  return STAT_SCHEMA
-    .filter((stat) => !stat.modes || stat.modes.includes(gameCode))
+  return STAT_SCHEMA.filter((stat) => !stat.modes || stat.modes.includes(gameCode))
     .map((stat) => {
       const rawValue = stat.getValue ? stat.getValue(gameData) : gameData[stat.key]
       return {
         key: stat.key,
         label: stat.label,
-        value: rawValue
+        value: rawValue,
       }
     })
     .filter((item) => item.value !== undefined && item.value !== null)
@@ -156,8 +155,7 @@ const loadPlayerFromPath = () => {
   let rawPlayer = ''
   if (segments[0] === 'stats') {
     rawPlayer = segments[1] || ''
-  } 
-  else {
+  } else {
     rawPlayer = segments[0] || ''
   }
 
@@ -191,66 +189,81 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('popstate', loadPlayerFromPath)
 })
-
 </script>
 
 <template>
   <div class="p-6">
-    <form @submit.prevent="handleSearch" class="search-bar mt-5 md:mt-8 md:flex md:items-center md:justify-center">
+    <form
+      @submit.prevent="handleSearch"
+      class="search-bar mt-5 md:mt-8 md:flex md:items-center md:justify-center"
+    >
       <input
         v-model="username"
         type="text"
         placeholder="Enter Xbox Gamertag or UUID..."
         required
-        class="px-3 py-1 h-10 border rounded-l-2xl rounded-bl-2xl w-64"
+        class="h-10 w-64 rounded-l-2xl rounded-bl-2xl border px-3 py-1"
       />
-      
+
       <!-- Changing this now updates the view immediately without hitting Search -->
-      <select v-model="selectedGame" class="px-3 py-1 h-10 rounded-r-2xl rounded-br-2xl border">
+      <select v-model="selectedGame" class="h-10 rounded-r-2xl rounded-br-2xl border px-3 py-1">
         <option v-for="g in games" :key="g.code" :value="g.code">
           {{ g.name }}
         </option>
       </select>
-      
-      <br>
 
-      <button 
-        type="submit" 
+      <br />
+
+      <button
+        type="submit"
         :disabled="loading"
-        class="py-2 px-6 mt-5 md:mt-0 md:ml-6 bg-neutral-700 text-white rounded-2xl dark:bg-neutral-200 dark:text-black hover:cursor-pointer">
+        class="mt-5 rounded-2xl bg-neutral-700 px-6 py-2 text-white hover:cursor-pointer md:mt-0 md:ml-6 dark:bg-neutral-200 dark:text-black"
+      >
         {{ loading ? 'Fetching...' : 'Search' }}
       </button>
     </form>
 
-    <div v-if="error" class="error-box flex items-center justify-center mt-6">{{ error }}</div>
-    <br><hr>
+    <div v-if="error" class="error-box mt-6 flex items-center justify-center">{{ error }}</div>
+    <br />
+    <hr />
 
-    
     <!-- Results Display -->
     <div v-if="stats" class="results-card">
       <div class="py-3">
         <h3>Profile: {{ stats.main?.username_cc || username }}</h3>
         <p v-if="stats.main?.rank"><strong>Rank:</strong> {{ stats.main.rank }}</p>
-        <p v-if="stats.main?.first_played"><strong>First Played:</strong> {{ new Date(stats.main.first_played * 1000).toLocaleDateString() }}</p>
-        <img v-if="stats.main?.equipped_avatar" :src="stats.main.equipped_avatar.url"  class="w-16 h-16 rounded-2xl">
-      </div>      
+        <p v-if="stats.main?.first_played">
+          <strong>First Played:</strong>
+          {{ new Date(stats.main.first_played * 1000).toLocaleDateString() }}
+        </p>
+        <img
+          v-if="stats.main?.equipped_avatar"
+          :src="stats.main.equipped_avatar.url"
+          class="h-16 w-16 rounded-2xl"
+        />
+      </div>
 
       <!-- 1. When 'All Games' is selected -->
-      <hr>
+      <hr />
       <div v-if="selectedGame === 'all'" class="py-3">
         <template v-for="(gameData, gameCode) in stats" :key="gameCode">
-          <div 
-            v-if="gameCode !== 'main' && gameData && !Array.isArray(gameData) && typeof gameData === 'object'" 
+          <div
+            v-if="
+              gameCode !== 'main' &&
+              gameData &&
+              !Array.isArray(gameData) &&
+              typeof gameData === 'object'
+            "
             class="game-card"
-          > 
-            
+          >
             <h4>{{ getGameName(gameCode) }}</h4>
             <ul>
               <li v-for="stat in getValidStats(gameData, gameCode)" :key="stat.key">
-                <strong>{{ stat.label }}:</strong> {{ typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value }}
+                <strong>{{ stat.label }}:</strong>
+                {{ typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value }}
               </li>
             </ul>
-            <br>
+            <br />
           </div>
         </template>
       </div>
@@ -260,7 +273,8 @@ onUnmounted(() => {
         <h4>{{ getGameName(selectedGame) }}</h4>
         <ul v-if="currentSingleGameStats">
           <li v-for="stat in getValidStats(currentSingleGameStats, selectedGame)" :key="stat.key">
-            <strong>{{ stat.label }}:</strong> {{ typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value }}
+            <strong>{{ stat.label }}:</strong>
+            {{ typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value }}
           </li>
         </ul>
         <p v-else>This player has no recorded stats for {{ getGameName(selectedGame) }}.</p>

@@ -4,11 +4,11 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-ubuntu: "ubuntu", san-serif;
+  --font-ubuntu: 'ubuntu', san-serif;
 }
 
 @layer base {
   body {
-    @apply bg-white text-slate-900 font-ubuntu transition-colors duration-200 dark:bg-zinc-800 dark:text-zinc-200;
+    @apply bg-white font-ubuntu text-slate-900 transition-colors duration-200 dark:bg-zinc-800 dark:text-zinc-200;
   }
 }

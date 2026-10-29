@@ -15,7 +15,7 @@ export function useHiveStats() {
     stats.value = null
 
     const safeIdentifier = encodeURIComponent(identifier.trim())
-    
+
     const endpoint = `${BASE_URL}/game/all/all/${safeIdentifier}`
 
     try {

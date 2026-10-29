@@ -15,7 +15,7 @@ const router = createRouter({
       path: '/stats/:username?',
       alias: ['/:username?'],
       name: 'player-stats',
-      component: PlayerStat
+      component: PlayerStat,
     },
   ],
 })
