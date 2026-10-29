@@ -222,7 +222,7 @@ onUnmounted(() => {
       </button>
     </form>
 
-    <div v-if="error" class="error-box">{{ error }}</div>
+    <div v-if="error" class="error-box flex items-center justify-center mt-6">{{ error }}</div>
     <br><hr>
 
     
