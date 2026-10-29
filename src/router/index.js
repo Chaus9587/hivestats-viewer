@@ -12,9 +12,10 @@ const router = createRouter({
       component: HomeView,
     },
     {
-      path: '/stats',
-      name: 'stats',
-      component: PlayerStat,
+      path: '/stats/:username?',
+      alias: ['/:username?'],
+      name: 'player-stats',
+      component: PlayerStat
     },
   ],
 })
