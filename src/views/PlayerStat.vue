@@ -7,8 +7,6 @@ const selectedGame = ref('all')
 
 const BASE_PATH = import.meta.env.BASE_URL
 
-const COMBAT_RATIO_MODES = ['ctf', 'sky', 'bed', 'sg']
-
 const { stats, loading, error, fetchPlayerStats } = useHiveStats()
 
 const games = [
@@ -33,84 +31,6 @@ const games = [
   { code: 'mob', name: 'MobGame' },
 ]
 
-const STAT_SCHEMA = [
-  // Must-have
-  { key: 'played', label: 'Games Played' },
-  { key: 'victories', label: 'Games Won' },
-  {
-    key: 'losses',
-    label: 'Games Lost',
-    getValue: (d) =>
-      typeof d.played === 'number' && typeof d.victories === 'number'
-        ? d.played - d.victories
-        : undefined,
-  },
-
-  // 2. Combat Stats (and stats related to ctf, sky, bed, sg)
-  { key: 'kills', label: 'Kills' },
-  { key: 'final_kills', label: 'Final Kills' },
-  { key: 'deaths', label: 'Deaths' },
-  { key: 'assists', label: 'Assists' },
-  {
-    key: 'kd_ratio',
-    label: 'K/D Ratio',
-    modes: COMBAT_RATIO_MODES,
-    getValue: (d) =>
-      typeof d.kills === 'number' && typeof d.deaths === 'number'
-        ? (d.deaths > 0 ? d.kills / d.deaths : d.kills).toFixed(2)
-        : undefined,
-  },
-  {
-    key: 'avg_kills',
-    label: 'Average Kills / Game',
-    modes: COMBAT_RATIO_MODES,
-    getValue: (d) =>
-      typeof d.kills === 'number' && typeof d.played === 'number' && d.played > 0
-        ? (d.kills / d.played).toFixed(2)
-        : undefined,
-  },
-  {
-    key: 'avg_deaths',
-    label: 'Average Deaths / Game',
-    modes: COMBAT_RATIO_MODES,
-    getValue: (d) =>
-      typeof d.deaths === 'number' && typeof d.played === 'number' && d.played > 0
-        ? (d.deaths / d.played).toFixed(2)
-        : undefined,
-  },
-
-  // Stats for other modes
-
-  // ctf
-  { key: 'flags_captured', label: 'Flags Captured' },
-  { key: 'flags_returned', label: 'Flags Returned' },
-
-  // bed
-  { key: 'beds_destroyed', label: 'Beds Destroyed' },
-
-  // tw (legacy)
-  { key: 'treasures_destroyed', label: 'Treasures Destroyed' },
-
-  // mm
-  { key: 'murders', label: 'Murders' },
-  { key: 'murderer_eliminations', label: 'Murderer Eliminations' },
-  { key: 'coins', label: 'Coins' },
-
-  // hide
-  { key: 'hider_kills', label: 'Hider Kills' },
-  { key: 'seeker_kills', label: 'Seeker Kills' },
-
-  // dr
-  { key: 'checkpoints', label: 'Checkpoints' },
-  { key: 'activated', label: 'Traps Activated' },
-
-  // misc
-  { key: 'goals', label: 'Goals' },
-
-  // 4. XP at the bottom
-  { key: 'xp', label: 'XP' },
-]
-
 // Get the name of a game by its code
 const getGameName = (code) => games.find((g) => g.code === code)?.name || code.toUpperCase()
 
@@ -124,21 +44,7 @@ const currentSingleGameStats = computed(() => {
   return gameData
 })
 
-// Pass gameCode as the second parameter to filter mode-restricted stats
-const getValidStats = (gameData, gameCode) => {
-  if (!gameData || Array.isArray(gameData)) return []
 
-  return STAT_SCHEMA.filter((stat) => !stat.modes || stat.modes.includes(gameCode))
-    .map((stat) => {
-      const rawValue = stat.getValue ? stat.getValue(gameData) : gameData[stat.key]
-      return {
-        key: stat.key,
-        label: stat.label,
-        value: rawValue,
-      }
-    })
-    .filter((item) => item.value !== undefined && item.value !== null)
-}
 
 // Allow user to input player's name in url to directly fetch stats
 const loadPlayerFromPath = () => {
@@ -258,9 +164,8 @@ onUnmounted(() => {
           >
             <h4>{{ getGameName(gameCode) }}</h4>
             <ul>
-              <li v-for="stat in getValidStats(gameData, gameCode)" :key="stat.key">
-                <strong>{{ stat.label }}:</strong>
-                {{ typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value }}
+              <li v-for="(val, label) in gameData" :key="label">
+                <strong>{{ label }}:</strong> {{ typeof val === 'number' ? val.toLocaleString() : val }}
               </li>
             </ul>
             <br />
@@ -272,9 +177,8 @@ onUnmounted(() => {
       <div v-else class="py-3">
         <h4>{{ getGameName(selectedGame) }}</h4>
         <ul v-if="currentSingleGameStats">
-          <li v-for="stat in getValidStats(currentSingleGameStats, selectedGame)" :key="stat.key">
-            <strong>{{ stat.label }}:</strong>
-            {{ typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value }}
+          <li v-for="(val, label) in currentSingleGameStats" :key="label">
+            <strong>{{ label }}:</strong> {{ typeof val === 'number' ? val.toLocaleString() : val }}
           </li>
         </ul>
         <p v-else>This player has no recorded stats for {{ getGameName(selectedGame) }}.</p>
