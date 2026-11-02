@@ -14,13 +14,13 @@ const STAT_SCHEMA = [
         ? d.played - d.victories
         : undefined,
   },
-  { 
-    key: 'win_rate', 
-    label: 'Win Rate', 
-    getValue: (d) => 
+  {
+    key: 'win_rate',
+    label: 'Win Rate',
+    getValue: (d) =>
       typeof d.victories === 'number' && typeof d.played === 'number' && d.played > 0
-      ? ((d.victories / d.played) * 100).toFixed(2) + '%' 
-      : undefined 
+        ? ((d.victories / d.played) * 100).toFixed(2) + '%'
+        : undefined,
   },
 
   // Combat Stats (and stats related to ctf, sky, bed, sg)
@@ -90,11 +90,7 @@ const STAT_SCHEMA = [
 
 // Pass gameCode as the second parameter to filter mode-restricted stats
 const formatGameStats = (rawGameData, gameCode) => {
-  if (
-      !rawGameData 
-      || Array.isArray(rawGameData) 
-      || typeof rawGameData !== 'object'
-    ) return [] // Keep unplayed modes as [] so existing Array.isArray checks still work
+  if (!rawGameData || Array.isArray(rawGameData) || typeof rawGameData !== 'object') return [] // Keep unplayed modes as [] so existing Array.isArray checks still work
 
   const orderedGameObj = {}
 
@@ -119,8 +115,7 @@ const transformHiveResponse = (rawData) => {
   for (const [key, value] of Object.entries(rawData)) {
     if (key === 'main') {
       formatted.main = value
-    } 
-    else {
+    } else {
       formatted[key] = formatGameStats(value, key)
     }
   }
