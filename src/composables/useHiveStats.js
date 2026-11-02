@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 
-const COMBAT_RATIO_MODES = ['ctf', 'sky', 'bed', 'sg']
+const combatModes = ['ctf', 'sky', 'bed', 'sg', 'tw']
 
 const STAT_SCHEMA = [
   // Must-have
@@ -14,6 +14,14 @@ const STAT_SCHEMA = [
         ? d.played - d.victories
         : undefined,
   },
+  { 
+    key: 'win_rate', 
+    label: 'Win Rate', 
+    getValue: (d) => 
+      typeof d.victories === 'number' && typeof d.played === 'number' && d.played > 0
+      ? ((d.victories / d.played) * 100).toFixed(2) + '%' 
+      : undefined 
+  },
 
   // Combat Stats (and stats related to ctf, sky, bed, sg)
   { key: 'kills', label: 'Kills' },
@@ -23,7 +31,7 @@ const STAT_SCHEMA = [
   {
     key: 'kd_ratio',
     label: 'K/D Ratio',
-    modes: COMBAT_RATIO_MODES,
+    combatOnly: true,
     getValue: (d) =>
       typeof d.kills === 'number' && typeof d.deaths === 'number'
         ? (d.deaths > 0 ? d.kills / d.deaths : d.kills).toFixed(2)
@@ -32,7 +40,7 @@ const STAT_SCHEMA = [
   {
     key: 'avg_kills',
     label: 'Average Kills / Game',
-    modes: COMBAT_RATIO_MODES,
+    combatOnly: true,
     getValue: (d) =>
       typeof d.kills === 'number' && typeof d.played === 'number' && d.played > 0
         ? (d.kills / d.played).toFixed(2)
@@ -41,7 +49,7 @@ const STAT_SCHEMA = [
   {
     key: 'avg_deaths',
     label: 'Average Deaths / Game',
-    modes: COMBAT_RATIO_MODES,
+    combatOnly: true,
     getValue: (d) =>
       typeof d.deaths === 'number' && typeof d.played === 'number' && d.played > 0
         ? (d.deaths / d.played).toFixed(2)
@@ -76,21 +84,23 @@ const STAT_SCHEMA = [
   // misc
   { key: 'goals', label: 'Goals' },
 
-  // 4. XP at the bottom
+  // XP
   { key: 'xp', label: 'XP' },
 ]
 
 // Pass gameCode as the second parameter to filter mode-restricted stats
 const formatGameStats = (rawGameData, gameCode) => {
-  if (!rawGameData || Array.isArray(rawGameData) || typeof rawGameData !== 'object') {
-    return [] // Keep unplayed modes as [] so existing Array.isArray checks still work
-  }
+  if (
+      !rawGameData 
+      || Array.isArray(rawGameData) 
+      || typeof rawGameData !== 'object'
+    ) return [] // Keep unplayed modes as [] so existing Array.isArray checks still work
 
   const orderedGameObj = {}
 
   for (const stat of STAT_SCHEMA) {
     // Skip if this stat is restricted to specific modes and doesn't match the current gameCode
-    if (stat.modes && !stat.modes.includes(gameCode)) continue
+    if (stat.combatOnly && !combatModes.includes(gameCode)) continue
 
     const val = stat.getValue ? stat.getValue(rawGameData) : rawGameData[stat.key]
 
@@ -109,7 +119,8 @@ const transformHiveResponse = (rawData) => {
   for (const [key, value] of Object.entries(rawData)) {
     if (key === 'main') {
       formatted.main = value
-    } else {
+    } 
+    else {
       formatted[key] = formatGameStats(value, key)
     }
   }
@@ -137,8 +148,6 @@ export function useHiveStats() {
 
     try {
       const response = await fetch(endpoint)
-      
-
 
       const contentType = response.headers.get('content-type') || ''
 
