@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import games from '@/composables/gameCode.js'
 
 const combatModes = ['ctf', 'sky', 'bed', 'sg', 'tw']
 
@@ -65,6 +66,13 @@ const STAT_SCHEMA = [
   // bed
   { key: 'beds_destroyed', label: 'Beds Destroyed' },
 
+  // sky-kits & sky-classic
+
+  { key: 'ore-mined', label: 'Ore Mined' },
+  { key: 'spell_used', label: 'Spells Used' },
+  { key: 'mystery_chests_destroyed', label: 'Mystery Chests Destroyed' },
+  { key: 'selected_kit', label: 'Selected Kit' },
+
   // tw (legacy)
   { key: 'treasures_destroyed', label: 'Treasures Destroyed' },
 
@@ -80,6 +88,13 @@ const STAT_SCHEMA = [
   // dr
   { key: 'checkpoints', label: 'Checkpoints' },
   { key: 'activated', label: 'Traps Activated' },
+
+  // build
+  { key: 'rating_love_received', label: 'Love Ratings' },
+  { key: 'rating_great_received', label: 'Great Ratings' },
+  { key: 'rating_good_received', label: 'Good Ratings' },
+  { key: 'rating_okay_received', label: 'Okay Ratings' },
+  { key: 'rating_meh_received', label: 'Meh Ratings' },
 
   // misc
   { key: 'goals', label: 'Goals' },
@@ -130,7 +145,7 @@ export function useHiveStats() {
 
   const BASE_URL = 'https://api.playhive.com/v0'
 
-  const fetchPlayerStats = async (identifier) => {
+  const fetchPlayerStats = async (identifier, timeframe) => {
     if (!identifier?.trim()) return
 
     loading.value = true
@@ -139,11 +154,14 @@ export function useHiveStats() {
 
     const safeIdentifier = encodeURIComponent(identifier.trim())
 
-    const endpoint = `${BASE_URL}/game/all/all/${safeIdentifier}`
+    const endpoint = timeframe === 'all'
+      ? `${BASE_URL}/game/all/all/${safeIdentifier}`
+      : ``
+      // : `${BASE_URL}/game/monthly/${games}/${safeIdentifier}/`
+
 
     try {
       const response = await fetch(endpoint)
-
       const contentType = response.headers.get('content-type') || ''
 
       if (!contentType.includes('application/json')) {
