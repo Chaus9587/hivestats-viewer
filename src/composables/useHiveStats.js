@@ -2,9 +2,11 @@ import { ref } from 'vue'
 import games from '@/composables/gameCode.js'
 
 const combatModes = ['ctf', 'sky', 'bed', 'sg', 'tw']
+const nonMonthlyModes = ['all', 'main', 'parkour', 'gi', 'mob']
+const CACHE_TTL_MS = 60 * 60 * 1000
 
 const STAT_SCHEMA = [
-  // Must-have
+  // Must-have (except parkours)
   { key: 'played', label: 'Games Played' },
   { key: 'victories', label: 'Games Won' },
   {
@@ -138,6 +140,21 @@ const transformHiveResponse = (rawData) => {
   return formatted
 }
 
+const formatTimeframe = (timeframe) => {
+  if (!timeframe || timeframe === 'all') {
+    return ''
+  }
+
+  const curr = new Date()
+
+  if (timeframe == 'current_month') {
+    return `/${curr.getFullYear()}/${curr.getMonth() + 1}`
+  }
+  else {
+    return `/${curr.getFullYear()}/${curr.getMonth()}`
+  }
+}
+
 export function useHiveStats() {
   const stats = ref(null)
   const loading = ref(false)
@@ -145,46 +162,100 @@ export function useHiveStats() {
 
   const BASE_URL = 'https://api.playhive.com/v0'
 
-  const fetchPlayerStats = async (identifier, timeframe) => {
+  const fetchPlayerStats = async (identifier, timeframe = 'all') => {
+
     if (!identifier?.trim()) return
 
     loading.value = true
     error.value = null
-    stats.value = null
 
     const safeIdentifier = encodeURIComponent(identifier.trim())
+    const playerKey = safeIdentifier.toLowerCase()
+    const monthPath = formatTimeframe(timeframe)
 
-    const endpoint = timeframe === 'all'
-      ? `${BASE_URL}/game/all/all/${safeIdentifier}`
-      : ``
-      // : `${BASE_URL}/game/monthly/${games}/${safeIdentifier}/`
+    const allTimeCacheKey = `hive_all_${playerKey}`
+    const monthlyCacheKey = `hive_monthly_${playerKey}_${timeframe}${monthPath}`
+    const activeCacheKey = timeframe === 'all' ? allTimeCacheKey : monthlyCacheKey
 
+    const rawActiveCache = localStorage.getItem(activeCacheKey)
+    const activeCache = rawActiveCache ? JSON.parse(rawActiveCache) : null
+    const isCacheValid = activeCache && Date.now() - activeCache.timestamp < CACHE_TTL_MS
+
+    if (activeCache && !isCacheValid) {
+      localStorage.removeItem(activeCacheKey)
+    }
+
+    const rawAllTimeCache = localStorage.getItem(allTimeCacheKey)
+    const allTimeCache = rawAllTimeCache ? JSON.parse(rawAllTimeCache) : null
+    const allTimeData = allTimeCache?.data || stats.value
+
+    const endpoints = timeframe === 'all'
+      ? [{ code: 'all', url: `${BASE_URL}/game/all/all/${safeIdentifier}` }]
+      : games
+            .map((g) => g.code)
+            .filter(
+              (code) =>
+                !nonMonthlyModes.includes(code) &&
+                allTimeData?.[code] &&
+                !Array.isArray(allTimeData[code])
+            )
+            .map((code) => ({
+              code,
+              url: `${BASE_URL}/game/monthly/player/${code}/${safeIdentifier}${monthPath}`
+            }))
 
     try {
-      const response = await fetch(endpoint)
-      const contentType = response.headers.get('content-type') || ''
+      const responses = await Promise.all(
 
-      if (!contentType.includes('application/json')) {
-        throw new Error('Received HTML instead of JSON. Check your Vite proxy.')
-      }
-      if (response.status === 404) {
-        throw new Error('Player not found.')
-      }
-      if (response.status === 429) {
-        throw new Error('Rate limit exceeded. Try again in a few minutes.')
-      }
-      if (!response.ok) {
-        throw new Error(`API error (${response.status})`)
-      }
+        // Await responses fetch from every url in endpoints.url
+        endpoints.map(async ({ code, url }) => {
 
-      const data = await response.json()
-      stats.value = transformHiveResponse(data)
+          const response = await fetch(url)
+
+          if (response.status === 404 || response.status === 204) {
+            if (timeframe === 'all') throw new Error('Player not found.')
+            return [code, []] // 0 games played this month
+          }
+          if (response.status === 429) {
+            throw new Error('Rate limit exceeded. Try again in a few minutes.')
+          }
+          if (!response.ok) {
+            throw new Error(`API error (${response.status})`)
+          }
+
+          const data = await response.json()
+          return [code, data]
+        })
+      )
+
+      const combinedRawData =
+        timeframe === 'all'
+          ? responses[0][1]
+          : {
+              ...(allTimeData?.main ? { main: allTimeData.main } : {}),
+              ...Object.fromEntries(responses)
+            }
+
+      stats.value = transformHiveResponse(combinedRawData)
+
+      localStorage.setItem(
+        activeCacheKey,
+        JSON.stringify({
+          data: stats.value,
+          timestamp: Date.now()
+        })
+      )
+
     } catch (err) {
-      error.value = err.message || 'An unexpected error occurred.'
+      if (err.message.includes('Rate limit') && isCacheValid) {
+        stats.value = activeCache.data
+        error.value = `${err.message} Showing cached stats from the last hour.`
+      } else {
+        error.value = err.message || 'Failed to fetch player statistics.'
+      }
     } finally {
       loading.value = false
     }
-  }
-
+  }  
   return { stats, loading, error, fetchPlayerStats }
 }

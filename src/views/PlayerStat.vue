@@ -10,12 +10,19 @@ const username = ref('')
 
 const BASE_PATH = import.meta.env.BASE_URL
 
+const selectedTimeframe = ref('all')
 
+const handleTimeframeChange = () => {
+  const activePlayer = stats.value?.main?.username || username.value
+  if (activePlayer) {
+    fetchPlayerStats(activePlayer, selectedTimeframe.value)
+  }
+}
 
 // Get the name of a game by its code
 const getGameName = (code) => games.find((g) => g.code === code)?.name || code.toUpperCase()
 
-// Load player's stats from url/srarch bar
+// handle search from url
 const loadPlayerFromPath = () => {
   let path = window.location.pathname
 
@@ -42,7 +49,7 @@ const loadPlayerFromPath = () => {
   }
 }
 
-// Handle search in url/search bar
+// Handle search in search bar
 const handleSearch = () => {
   const cleanName = username.value.trim()
   if (!cleanName) return
@@ -54,7 +61,7 @@ const handleSearch = () => {
     : `${BASE_PATH}${encodeURIComponent(cleanName)}`
 
   window.history.pushState({}, '', newUrl)
-  fetchPlayerStats(cleanName, 'all')
+  fetchPlayerStats(cleanName)
 }
 
 onMounted(() => {
@@ -72,7 +79,7 @@ onUnmounted(() => {
     <!-- Input section -->
     <form
       @submit.prevent="handleSearch"
-      class="search-bar my-10 flex  items-center justify-center sm:my-16 flex-row"
+      class="search-bar my-10 flex items-center justify-center sm:my-16 flex-row"
     >
       <input
         v-model="username"
@@ -82,20 +89,24 @@ onUnmounted(() => {
         class="h-10 w-52 rounded-2xl border px-3 py-1 md:w-70"
       />
 
-      <div class="">
 
-        <button
-          type="submit"
-          :disabled="loading"
-          class="ml-6 sm:ml-10 rounded-2xl bg-neutral-700 px-6 py-2 text-white hover:cursor-pointer dark:bg-neutral-200 dark:text-black"
-        >
-          Search
-        </button>
-      </div>
+      <button
+        type="submit"
+        :disabled="loading"
+        class="ml-6 sm:ml-10 rounded-2xl bg-neutral-700 px-6 py-2 text-white hover:cursor-pointer dark:bg-neutral-200 dark:text-black"
+      >
+        Search
+      </button>
+
+      
     </form>
+    <div class="flex items-center justify-center mb-12">
+      <div v-if="loading" class="loading-box w-[75vw]">loading...</div>
+      <div v-if="error" class="error-box w-[75vw]">{{ error }}</div>
+    </div>
+    
 
-    <div v-if="loading" class="loading-box flex items-center justify-center">loading...</div>
-    <div v-if="error" class="error-box flex items-center justify-center">{{ error }}</div>
+    
 
     <!-- Results Display -->
     <div v-if="stats" class="results-card">
@@ -154,11 +165,32 @@ onUnmounted(() => {
           </div>
         </div>
 
-
-        <div class="extras grow-7 h-fit rounded-2xl bg-neutral-100 p-6 shadow-xl dark:bg-zinc-700">
-          <div class="avatar">
-            <h3 class="text-2xl">Avatar</h3>
+        <div class="extras h-fit grow-6 max-w-[40vw] rounded-2xl bg-neutral-100 p-6 shadow-xl dark:bg-zinc-700">
+          <div class="mb-8">
+            <select
+              id="timeframe-select"
+              v-model="selectedTimeframe"
+              :disabled="loading"
+              @change="handleTimeframeChange"
+              class="h-10 w-[70%] rounded-2xl border bg-white px-3 py-1 dark:bg-zinc-700"
+            >
+              <option value="all">All Time</option>
+              <option value="current_month">Current Month</option>
+              <option value="last_month">Last Month</option>
+            </select>
           </div>
+          <hr />
+
+          <div class="avatar">
+            <h3 class="text-2xl font-medium my-4">Avatar</h3>
+            <div class="flex flex-wrap">
+              <img 
+                :src="avatar.url" 
+                class="size-20 p-2"
+                v-for="avatar in stats.main?.avatar_unlocked">
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
