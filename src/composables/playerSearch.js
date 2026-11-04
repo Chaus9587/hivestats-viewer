@@ -3,18 +3,20 @@ import { useHiveStats } from '@/composables/useHiveStats'
 import games from '@/composables/gameCode'
 
 export function playerSearch() {
-
   const BASE_PATH = import.meta.env.BASE_URL
   const username = ref('')
   const selectedTimeframe = ref('all')
   const lastValidTimeframe = ref('all')
 
   const { stats, loading, error, fetchPlayerStats } = useHiveStats()
-  
+
+  // handle timeframe change in dropdown menu in sidebar
   const handleTimeframeChange = async () => {
     const activePlayer = stats.value?.main?.username || username.value
     if (!activePlayer) return
-    console.log(`Fetching stats for ${activePlayer} with timeframe: ${selectedTimeframe.value}, previous valid timeframe: ${lastValidTimeframe.value}`)
+    console.log(
+      `Fetching stats for ${activePlayer} with timeframe: ${selectedTimeframe.value}, previous valid timeframe: ${lastValidTimeframe.value}`,
+    )
     const success = await fetchPlayerStats(activePlayer, selectedTimeframe.value)
     console.log(error.value)
     if (success) {
@@ -52,6 +54,7 @@ export function playerSearch() {
       console.log(`last: ${lastValidTimeframe.value}, selected: ${selectedTimeframe.value}`)
     }
   }
+  
   // Handle search in search bar
   const handleSearch = () => {
     const cleanName = username.value.trim()
@@ -75,6 +78,7 @@ export function playerSearch() {
   onUnmounted(() => {
     window.removeEventListener('popstate', loadPlayerFromPath)
   })
+
   return {
     stats,
     loading,
@@ -83,6 +87,6 @@ export function playerSearch() {
     selectedTimeframe,
     handleSearch,
     handleTimeframeChange,
-    getGameName
+    getGameName,
   }
 }

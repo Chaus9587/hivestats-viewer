@@ -1,109 +1,63 @@
 import { ref } from 'vue'
 import games from '@/composables/gameCode.js'
+import { STAT_SCHEMA, STATS_SCHEMAS_PARKOUR } from '@/composables/statsSchemas.js'
 
 const combatModes = ['ctf', 'sky', 'bed', 'sg', 'tw']
-const nonMonthlyModes = ['all', 'main', 'parkour', 'gi', 'mob']
+
 const CACHE_TTL_MS = 60 * 60 * 1000
 
-const STAT_SCHEMA = [
-  // Must-have (except parkours)
-  { key: 'played', label: 'Games Played' },
-  { key: 'victories', label: 'Games Won' },
-  {
-    key: 'losses',
-    label: 'Games Lost',
-    getValue: (d) =>
-      typeof d.played === 'number' && typeof d.victories === 'number'
-        ? d.played - d.victories
-        : undefined,
-  },
-  {
-    key: 'win_rate',
-    label: 'Win Rate',
-    getValue: (d) =>
-      typeof d.victories === 'number' && typeof d.played === 'number' && d.played > 0
-        ? ((d.victories / d.played) * 100).toFixed(2) + '%'
-        : undefined,
-  },
+const formatParkourTime = (ticks) => {
+  if (typeof ticks !== 'number') return null
+  const totalMs = ticks * 50
+  const minutes = Math.floor(totalMs / 60000)
+  const seconds = String(Math.floor((totalMs % 60000) / 1000)).padStart(2, '0')
+  const ms = String(totalMs % 1000).padStart(3, '0')
+  return `${minutes}:${seconds}.${ms}`
+}
 
-  // Combat Stats (and stats related to ctf, sky, bed, sg)
-  { key: 'kills', label: 'Kills' },
-  { key: 'final_kills', label: 'Final Kills' },
-  { key: 'deaths', label: 'Deaths' },
-  { key: 'assists', label: 'Assists' },
-  {
-    key: 'kd_ratio',
-    label: 'K/D Ratio',
-    combatOnly: true,
-    getValue: (d) =>
-      typeof d.kills === 'number' && typeof d.deaths === 'number'
-        ? (d.deaths > 0 ? d.kills / d.deaths : d.kills).toFixed(2)
-        : undefined,
-  },
-  {
-    key: 'avg_kills',
-    label: 'Average Kills / Game',
-    combatOnly: true,
-    getValue: (d) =>
-      typeof d.kills === 'number' && typeof d.played === 'number' && d.played > 0
-        ? (d.kills / d.played).toFixed(2)
-        : undefined,
-  },
-  {
-    key: 'avg_deaths',
-    label: 'Average Deaths / Game',
-    combatOnly: true,
-    getValue: (d) =>
-      typeof d.deaths === 'number' && typeof d.played === 'number' && d.played > 0
-        ? (d.deaths / d.played).toFixed(2)
-        : undefined,
-  },
+const formatParkourStats = (rawParkourData) => {
+  const worldsData = rawParkourData?.parkours
+  if (!worldsData || Array.isArray(worldsData) || typeof worldsData !== 'object') {
+    return []
+  }
 
-  // Stats for other modes
+  const formattedWorlds = {}
 
-  // ctf
-  { key: 'flags_captured', label: 'Flags Captured' },
-  { key: 'flags_returned', label: 'Flags Returned' },
+  for (const { world, courses } of STATS_SCHEMAS_PARKOUR) {
+    const rawWorld = worldsData[world]
+    if (!rawWorld || typeof rawWorld !== 'object') continue
 
-  // bed
-  { key: 'beds_destroyed', label: 'Beds Destroyed' },
+    const formattedCourses = {}
 
-  // sky-kits & sky-classic
+    for (const courseName of courses) {
+      const rawCourse = rawWorld[courseName]
+      if (!rawCourse || typeof rawCourse !== 'object') continue
 
-  { key: 'ore-mined', label: 'Ore Mined' },
-  { key: 'spell_used', label: 'Spells Used' },
-  { key: 'mystery_chests_destroyed', label: 'Mystery Chests Destroyed' },
-  { key: 'selected_kit', label: 'Selected Kit' },
+      const bestTime = formatParkourTime(rawCourse.best_run_time)
+      const stars = rawCourse.course_stars ?? rawCourse.collected_stars?.length ?? 0
 
-  // tw (legacy)
-  { key: 'treasures_destroyed', label: 'Treasures Destroyed' },
+      // Sort checkpoint ticks ascending so coordinates become Checkpoint 1, Checkpoint 2, ...
+      const sortedTicks = Object.values(rawCourse.best_checkpoint_times || {}).sort((a, b) => a - b)
 
-  // mm
-  { key: 'murders', label: 'Murders' },
-  { key: 'murderer_eliminations', label: 'Murderer Eliminations' },
-  { key: 'coins', label: 'Coins' },
+      const checkpoints = {}
+      sortedTicks.forEach((ticks, idx) => {
+        checkpoints[`Checkpoint ${idx + 1}`] = formatParkourTime(ticks)
+      })
 
-  // hide
-  { key: 'hider_kills', label: 'Hider Kills' },
-  { key: 'seeker_kills', label: 'Seeker Kills' },
+      formattedCourses[courseName] = {
+        summary: `Best Time: ${bestTime ?? 'N/A'} - ${stars} Stars`,
+        checkpoints,
+      }
+    }
 
-  // dr
-  { key: 'checkpoints', label: 'Checkpoints' },
-  { key: 'activated', label: 'Traps Activated' },
+    if (Object.keys(formattedCourses).length > 0) {
+      formattedWorlds[world] = formattedCourses
+    }
+  }
 
-  // build
-  { key: 'rating_love_received', label: 'Love Ratings' },
-  { key: 'rating_great_received', label: 'Great Ratings' },
-  { key: 'rating_good_received', label: 'Good Ratings' },
-  { key: 'rating_okay_received', label: 'Okay Ratings' },
-  { key: 'rating_meh_received', label: 'Meh Ratings' },
-
-  // misc
-  { key: 'goals', label: 'Goals' },
-
-  // XP
-  { key: 'xp', label: 'XP' },
-]
+  // Return [] if empty so unplayed Parkour Worlds is hidden by !Array.isArray(gameData)
+  return Object.keys(formattedWorlds).length > 0 ? formattedWorlds : []
+}
 
 // Pass gameCode as the second parameter to filter mode-restricted stats
 const formatGameStats = (rawGameData, gameCode) => {
@@ -111,9 +65,12 @@ const formatGameStats = (rawGameData, gameCode) => {
 
   const orderedGameObj = {}
 
+  const gameConfig = games.find((g) => g.code === gameCode)
+  const isCombat = Boolean(gameConfig?.combat)
+
   for (const stat of STAT_SCHEMA) {
     // Skip if this stat is restricted to specific modes and doesn't match the current gameCode
-    if (stat.combatOnly && !combatModes.includes(gameCode)) continue
+    if (stat.combatOnly && !isCombat) continue
 
     const val = stat.getValue ? stat.getValue(rawGameData) : rawGameData[stat.key]
 
@@ -132,6 +89,8 @@ const transformHiveResponse = (rawData) => {
   for (const [key, value] of Object.entries(rawData)) {
     if (key === 'main') {
       formatted.main = value
+    } else if (key === 'parkour') {
+      formatted.parkour = formatParkourStats(value)
     } else {
       formatted[key] = formatGameStats(value, key)
     }
@@ -147,11 +106,11 @@ const formatTimeframe = (timeframe) => {
 
   const curr = new Date()
 
-  if (timeframe == 'current_month') {
-    return `/${curr.getFullYear()}/${curr.getMonth() + 1}`
-  }
-  else {
-    return `/${curr.getFullYear()}/${curr.getMonth()}`
+  // follows playhive API's UTC time zone
+  if (timeframe === 'current_month') {
+    return `/${curr.getUTCFullYear()}/${curr.getUTCMonth() + 1}`
+  } else {
+    return `/${curr.getUTCFullYear()}/${curr.getUTCMonth()}`
   }
 }
 
@@ -163,7 +122,6 @@ export function useHiveStats() {
   const BASE_URL = 'https://api.playhive.com/v0'
 
   const fetchPlayerStats = async (identifier, timeframe = 'all') => {
-
     if (!identifier?.trim()) return
 
     loading.value = true
@@ -173,14 +131,17 @@ export function useHiveStats() {
     const playerKey = safeIdentifier.toLowerCase()
     const monthPath = formatTimeframe(timeframe)
 
+    // Set the key for storing the upcoming API response for a player
     const allTimeCacheKey = `hive_all_${playerKey}`
     const monthlyCacheKey = `hive_monthly_${playerKey}_${timeframe}${monthPath}`
     const activeCacheKey = timeframe === 'all' ? allTimeCacheKey : monthlyCacheKey
 
+    // Check whether or not previously saved all-time/monthly API response for same player are expired
     const rawActiveCache = localStorage.getItem(activeCacheKey)
     const activeCache = rawActiveCache ? JSON.parse(rawActiveCache) : null
     const isCacheValid = activeCache && Date.now() - activeCache.timestamp < CACHE_TTL_MS
 
+    // Removed when the saved API response are expired
     if (activeCache && !isCacheValid) {
       localStorage.removeItem(activeCacheKey)
     }
@@ -189,27 +150,24 @@ export function useHiveStats() {
     const allTimeCache = rawAllTimeCache ? JSON.parse(rawAllTimeCache) : null
     const allTimeData = allTimeCache?.data || stats.value
 
-    const endpoints = timeframe === 'all'
-      ? [{ code: 'all', url: `${BASE_URL}/game/all/all/${safeIdentifier}` }]
-      : games
-            .map((g) => g.code)
+    // Put all-time/monthly API requests url into an array
+    const endpoints =
+      timeframe === 'all'
+        ? [{ code: 'all', url: `${BASE_URL}/game/all/all/${safeIdentifier}` }]
+        : games
             .filter(
-              (code) =>
-                !nonMonthlyModes.includes(code) &&
-                allTimeData?.[code] &&
-                !Array.isArray(allTimeData[code])
+              (g) =>
+                g.monthly !== false && allTimeData?.[g.code] && !Array.isArray(allTimeData[g.code]),
             )
-            .map((code) => ({
-              code,
-              url: `${BASE_URL}/game/monthly/player/${code}/${safeIdentifier}${monthPath}`
+            .map((g) => ({
+              code: g.code,
+              url: `${BASE_URL}/game/monthly/player/${g.code}/${safeIdentifier}${monthPath}`,
             }))
 
     try {
       const responses = await Promise.all(
-
         // Await responses fetch from every url in endpoints.url
         endpoints.map(async ({ code, url }) => {
-
           const response = await fetch(url)
 
           if (response.status === 404 || response.status === 204) {
@@ -225,27 +183,30 @@ export function useHiveStats() {
 
           const data = await response.json()
           return [code, data]
-        })
+        }),
       )
 
+      // Turn [[code, data], [code, data], ...] array back to a json data
       const combinedRawData =
         timeframe === 'all'
           ? responses[0][1]
           : {
               ...(allTimeData?.main ? { main: allTimeData.main } : {}),
-              ...Object.fromEntries(responses)
+              ...Object.fromEntries(responses),
             }
 
+      // Rearrange json data order in order to displayed in a logical order
       stats.value = transformHiveResponse(combinedRawData)
 
+      // Save the fresh API response to localStorage with the key selected
       localStorage.setItem(
         activeCacheKey,
         JSON.stringify({
           data: stats.value,
-          timestamp: Date.now()
-        })
+          timestamp: Date.now(),
+        }),
       )
-    
+
       return true
     } catch (err) {
       if (err.message.includes('Rate limit') && isCacheValid) {
@@ -259,6 +220,6 @@ export function useHiveStats() {
     } finally {
       loading.value = false
     }
-  }  
+  }
   return { stats, loading, error, fetchPlayerStats }
 }

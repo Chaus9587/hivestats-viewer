@@ -33,20 +33,19 @@ export const MC_BEDROCK_COLORS = {
 export const parseMcText = (rawText, defaultCode = '&f') => {
   if (!rawText || typeof rawText !== 'string') return []
 
-  // Split by § followed by any alphanumeric character, keeping the delimiter in the array
+  // Split by & followed by any alphanumeric character, keeping the delimiter in the array
   const tokens = rawText.split(/(&[0-9a-z])/gi)
   const segments = []
 
   let currentColorCode = defaultCode
 
-  for (const token of tokens) { 
-
+  for (const token of tokens) {
     if (/^&[0-9a-z]$/i.test(token)) {
       const code = token.toLowerCase()
 
       if (MC_BEDROCK_COLORS[code]) {
         currentColorCode = code
-      } else if (code === '§r') {
+      } else if (code === '&r') {
         currentColorCode = defaultCode
       }
 
