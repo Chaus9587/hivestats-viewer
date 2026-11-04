@@ -245,13 +245,16 @@ export function useHiveStats() {
           timestamp: Date.now()
         })
       )
-
+    
+      return true
     } catch (err) {
       if (err.message.includes('Rate limit') && isCacheValid) {
         stats.value = activeCache.data
         error.value = `${err.message} Showing cached stats from the last hour.`
+        return true
       } else {
         error.value = err.message || 'Failed to fetch player statistics.'
+        return false
       }
     } finally {
       loading.value = false

@@ -1,77 +1,37 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useHiveStats } from '@/composables/useHiveStats'
-import Card from '@/components/Card.vue'
-import games from '@/composables/gameCode.js'
+import { ref, computed } from 'vue'
+import { playerSearch } from '@/composables/playerSearch'
+import { parseMcText } from '@/composables/colorCode'
+import gameCard from '@/components/GameCard.vue'
 
-const { stats, loading, error, fetchPlayerStats } = useHiveStats()
+const showAllAvatars = ref(false)
+const showAllHubtitles = ref(false)
 
-const username = ref('')
+const avatarLimit = 6
+const hubtitleLimit = 4
 
-const BASE_PATH = import.meta.env.BASE_URL
+const {
+  stats,
+  loading,
+  error,
+  username,
+  selectedTimeframe,
+  handleSearch,
+  handleTimeframeChange,
+  getGameName
+} = playerSearch()
 
-const selectedTimeframe = ref('all')
-
-const handleTimeframeChange = () => {
-  const activePlayer = stats.value?.main?.username || username.value
-  if (activePlayer) {
-    fetchPlayerStats(activePlayer, selectedTimeframe.value)
-  }
-}
-
-// Get the name of a game by its code
-const getGameName = (code) => games.find((g) => g.code === code)?.name || code.toUpperCase()
-
-// handle search from url
-const loadPlayerFromPath = () => {
-  let path = window.location.pathname
-
-  // Strip base path in vite.config.js
-  if (path.startsWith(BASE_PATH)) {
-    path = path.slice(BASE_PATH.length)
-  }
-
-  // Split remaining path into segments (e.g. "stats/PlayerName" -> ["stats", "PlayerName"])
-  const segments = path.split('/').filter(Boolean)
-
-  let rawPlayer = ''
-  if (segments[0] === 'stats') {
-    rawPlayer = segments[1] || ''
-  } else {
-    rawPlayer = segments[0] || ''
-  }
-
-  const cleanPlayer = decodeURIComponent(rawPlayer).trim()
-
-  if (cleanPlayer && cleanPlayer !== 'index.html') {
-    username.value = cleanPlayer
-    fetchPlayerStats(cleanPlayer)
-  }
-}
-
-// Handle search in search bar
-const handleSearch = () => {
-  const cleanName = username.value.trim()
-  if (!cleanName) return
-
-  // Preserve '/stats/' if currently on the /stats route, or use root '/hivestats-viewer/PlayerName'
-  const isStatsSubroute = window.location.pathname.startsWith(`${BASE_PATH}stats`)
-  const newUrl = isStatsSubroute
-    ? `${BASE_PATH}stats/${encodeURIComponent(cleanName)}`
-    : `${BASE_PATH}${encodeURIComponent(cleanName)}`
-
-  window.history.pushState({}, '', newUrl)
-  fetchPlayerStats(cleanName)
-}
-
-onMounted(() => {
-  loadPlayerFromPath()
-  window.addEventListener('popstate', loadPlayerFromPath)
+// Determine whether displaying all avatars or just the first 12 based on the showAllAvatars state
+const displayedAvatars = computed(() => {
+  const avatars = stats.value?.main?.avatar_unlocked || []
+  return showAllAvatars.value ? avatars : avatars.slice(0, avatarLimit)
 })
 
-onUnmounted(() => {
-  window.removeEventListener('popstate', loadPlayerFromPath)
+const displayedHubtitles = computed(() => {
+  const hubtitles = stats.value?.main?.hub_title_unlocked || []
+  return showAllHubtitles.value ? hubtitles : hubtitles.slice(0, hubtitleLimit)
 })
+
 </script>
 
 <template>
@@ -89,7 +49,6 @@ onUnmounted(() => {
         class="h-10 w-52 rounded-2xl border px-3 py-1 md:w-70"
       />
 
-
       <button
         type="submit"
         :disabled="loading"
@@ -97,21 +56,17 @@ onUnmounted(() => {
       >
         Search
       </button>
-
-      
+ 
     </form>
-    <div class="flex items-center justify-center mb-12">
+    <div class="flex items-center justify-center text-center">
       <div v-if="loading" class="loading-box w-[75vw]">loading...</div>
       <div v-if="error" class="error-box w-[75vw]">{{ error }}</div>
     </div>
-    
-
-    
-
+  
     <!-- Results Display -->
-    <div v-if="stats" class="results-card">
+    <main v-if="stats" class="results-card">
       <!-- Profile card -->
-      <div
+      <section
         class="profile-card my-6 flex flex-col items-center justify-center bg-neutral-100 px-[calc(15vw-16px)] py-10 shadow-2xl sm:flex-row sm:items-center sm:justify-normal sm:py-12 md:py-15 dark:bg-zinc-700"
         :class="{
           'ultimate' : stats.main?.rank === 'ULTIMATE',
@@ -137,36 +92,37 @@ onUnmounted(() => {
             {{ new Date(stats.main.first_played * 1000).toLocaleDateString() }}
           </p>
         </div>
-      </div>
-      <div v-if="stats" class="stats-display flex flex-col md:flex-row md:justify-around w-full pt-12 gap-10 px-[calc(10vw-16px)]">
+      </section>
+
+      <section v-if="stats" class="stats-display flex flex-col md:flex-row md:justify-around w-full pt-12 gap-10 px-[calc(10vw-16px)]">
         <div class="statistics grow-8">
           <!-- All games statistics -->
-          <div>
-            <div v-for="(gameData, gameCode) in stats" :key="gameCode">
-              <div
-                v-if="
-                  gameCode !== 'main' &&
-                  gameData &&
-                  !Array.isArray(gameData) &&
-                  typeof gameData === 'object'
-                "
-                class="game-card mb-10 rounded-2xl bg-neutral-100 p-6 shadow-xl dark:bg-zinc-700"
-              >
-                <Card :title="getGameName(gameCode)">
-                  <ul class="mt-3">
-                    <li v-for="(val, label) in gameData" :key="label" class="pt-1">
-                      <strong>{{ label }}:</strong>
-                      {{ typeof val === 'number' ? val.toLocaleString() : val }}
-                    </li>
-                  </ul>
-                </Card>
-              </div>
+          <div v-for="(gameData, gameCode) in stats" :key="gameCode">
+            <div
+              v-if="
+                gameCode !== 'main' &&
+                gameData &&
+                !Array.isArray(gameData) &&
+                typeof gameData === 'object'
+              "
+              class="game-card mb-10 rounded-2xl bg-neutral-100 p-6 shadow-xl dark:bg-zinc-700"
+            >
+              <gameCard :title="getGameName(gameCode)">
+                <ul class="mt-3">
+                  <li v-for="(val, label) in gameData" :key="label" class="pt-1">
+                    <strong>{{ label }}:</strong>
+                    {{ typeof val === 'number' ? val.toLocaleString() : val }}
+                  </li>
+                </ul>
+              </gameCard>
             </div>
           </div>
         </div>
 
-        <div class="extras h-fit grow-6 max-w-[40vw] rounded-2xl bg-neutral-100 p-6 shadow-xl dark:bg-zinc-700">
-          <div class="mb-8">
+        <div class="extras h-fit grow-6 md:max-w-[35vw] rounded-2xl bg-neutral-100 p-6 shadow-xl dark:bg-zinc-700">
+
+          <!-- Dropdown menu for selecting timeframe -->
+          <div class="dropdown mb-8 mt-2">
             <select
               id="timeframe-select"
               v-model="selectedTimeframe"
@@ -178,22 +134,116 @@ onUnmounted(() => {
               <option value="current_month">Current Month</option>
               <option value="last_month">Last Month</option>
             </select>
-          </div>
-          <hr />
+          </div><hr />
 
-          <div class="avatar">
-            <h3 class="text-2xl font-medium my-4">Avatar</h3>
-            <div class="flex flex-wrap">
-              <img 
-                :src="avatar.url" 
-                class="size-20 p-2"
-                v-for="avatar in stats.main?.avatar_unlocked">
+          <!-- Avatars display -->
+          <div class="avatar my-5">
+            <div class="flex items-center gap-3">
+              <h3 class="text-2xl font-medium">Avatar</h3>
+              <span class="inline-block h-6 w-0.5 bg-gray-400 dark:bg-zinc-500"></span>
+              <button
+                v-if="stats.main?.avatar_unlocked?.length > 12"
+                type="button"
+                class="size-7 flex items-center justify-center hover:cursor-pointer"
+                @click="showAllAvatars = !showAllAvatars"
+              >
+                <div v-if="!showAllAvatars">
+                  <img class="block dark:hidden" src="@/assets/down.svg" alt="" />
+                  <img class="hidden dark:block" src="@/assets/down-dark.svg" alt="" />
+                </div>
+                <div v-else>
+                  <img class="block dark:hidden" src="@/assets/up.svg" alt="" />
+                  <img class="hidden dark:block" src="@/assets/up-dark.svg" alt="" />
+                </div>
+              </button>
             </div>
-          </div>
 
+            <section
+              class="flex flex-wrap transition my-3"
+              :class="{'hover:cursor-pointer': stats.main?.avatar_unlocked?.length > avatarLimit}"
+              @click="
+                showAllAvatars = !showAllAvatars
+              "
+            >         
+              <img
+                v-for="(avatar, index) in displayedAvatars"
+                :key="avatar.url || index"
+                :src="avatar.url"
+                class="size-18 p-2"
+                alt="Unlocked avatar"
+              />
+          
+              <div
+                v-if="stats.main?.avatar_unlocked?.length > avatarLimit"
+                class="w-full mt-3 text-sm font-medium opacity-75"
+              >
+                {{
+                  showAllAvatars
+                    ? 'Click to collapse'
+                    : `Click to view all ${stats.main.avatar_unlocked.length} avatars (+${stats.main.avatar_unlocked.length - avatarLimit} more)`
+                }}
+              </div>
+            </section>
+          </div><hr />
+
+          <!-- Hub titles display -->
+          <div class="hub-titles my-5">
+            <div class="flex items-center gap-3">
+              <h3 class="text-2xl font-medium">Hub Titles</h3>
+              <span class="inline-block h-6 w-0.5 bg-gray-400 dark:bg-zinc-500"></span>
+              <button
+                v-if="stats.main?.hub_title_unlocked?.length > hubtitleLimit"
+                type="button"
+                class="size-7 flex items-center justify-center hover:cursor-pointer"
+                @click="showAllHubtitles = !showAllHubtitles"
+              >
+                <div v-if="!showAllHubtitles">
+                  <img class="block dark:hidden" src="@/assets/down.svg" alt="" />
+                  <img class="hidden dark:block" src="@/assets/down-dark.svg" alt="" />
+                </div>
+                <div v-else>
+                  <img class="block dark:hidden" src="@/assets/up.svg" alt="" />
+                  <img class="hidden dark:block" src="@/assets/up-dark.svg" alt="" />
+                </div>
+              </button>
+            </div> 
+            
+            <section
+            class="my-3"
+            :class="{'hover:cursor-pointer': stats.main?.hub_title_unlocked?.length > hubtitleLimit}"
+              @click="
+                stats.main?.hub_title_unlocked?.length > hubtitleLimit && (showAllHubtitles = !showAllHubtitles)
+              "
+            >
+              <p
+                v-for="(title, idx) in displayedHubtitles"
+                :key="idx"  
+                class="font-medium drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] mb-1"
+              >
+                <span
+                  v-for="(segment, segIdx) in parseMcText(title)"
+                  :key="segIdx"
+                  :style="{ color: segment.hex }"
+                >
+                  {{ segment.text }}
+                </span>
+              </p>
+
+              <div
+                v-if="stats.main?.hub_title_unlocked?.length > hubtitleLimit"
+                class="w-full mt-3 text-sm font-medium opacity-75"
+              >
+                {{
+                  showAllHubtitles
+                    ? 'Click to collapse'
+                    : `Click to view all ${stats.main.hub_title_unlocked.length} avatars (+${stats.main.hub_title_unlocked.length - hubtitleLimit} more)`
+                }}
+              </div>         
+            </section>
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   </div>
 </template>
 
