@@ -226,16 +226,18 @@ const displayedMounts = computed(() => {
             item-name="hub titles"
             :total="stats.main?.hub_title_unlocked?.length || 0"
             :limit="textLimit"
+            content-class="flex flex-wrap"
           >
             <p
               v-for="(title, idx) in displayedHubtitles"
               :key="idx"
-              class="mb-1 font-medium drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]"
+              class="mx-1 mb-2 w-fit rounded-2xl bg-neutral-300 px-3 py-0.5 text-[1.0625rem] dark:bg-zinc-600"
             >
               <span
                 v-for="(segment, segIdx) in parseMcText(title)"
                 :key="segIdx"
                 :style="{ color: segment.hex }"
+                class="drop-shadow-[0_1px_1px_#000000aa] dark:drop-shadow-[0_1px_1px_#afafaf7f]"
               >
                 {{ segment.text }}
               </span>
