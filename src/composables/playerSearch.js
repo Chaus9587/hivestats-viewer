@@ -18,7 +18,7 @@ export function playerSearch() {
       `Fetching stats for ${activePlayer} with timeframe: ${selectedTimeframe.value}, previous valid timeframe: ${lastValidTimeframe.value}`,
     )
     const success = await fetchPlayerStats(activePlayer, selectedTimeframe.value)
-    console.log(error.value)
+  
     if (success) {
       lastValidTimeframe.value = selectedTimeframe.value
     } else {

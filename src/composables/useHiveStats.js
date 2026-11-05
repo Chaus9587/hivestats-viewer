@@ -135,9 +135,11 @@ export function useHiveStats() {
     const allTimeCacheKey = `hive_all_${playerKey}`
     const monthlyCacheKey = `hive_monthly_${playerKey}_${timeframe}${monthPath}`
     const activeCacheKey = timeframe === 'all' ? allTimeCacheKey : monthlyCacheKey
+    console.log(activeCacheKey)
 
     // Check whether or not previously saved all-time/monthly API response for same player are expired
     const rawActiveCache = localStorage.getItem(activeCacheKey)
+    console.log(rawActiveCache)
     const activeCache = rawActiveCache ? JSON.parse(rawActiveCache) : null
     const isCacheValid = activeCache && Date.now() - activeCache.timestamp < CACHE_TTL_MS
 
@@ -145,10 +147,12 @@ export function useHiveStats() {
     if (activeCache && !isCacheValid) {
       localStorage.removeItem(activeCacheKey)
     }
-
+    // Fetch player's all time stats from storage in order to filter what games they haven't played (for monthly stats search)
     const rawAllTimeCache = localStorage.getItem(allTimeCacheKey)
     const allTimeCache = rawAllTimeCache ? JSON.parse(rawAllTimeCache) : null
-    const allTimeData = allTimeCache?.data || stats.value
+
+  
+    const allTimeData = allTimeCache?.data || null
 
     // Put all-time/monthly API requests url into an array
     const endpoints =
@@ -163,7 +167,8 @@ export function useHiveStats() {
               code: g.code,
               url: `${BASE_URL}/game/monthly/player/${g.code}/${safeIdentifier}${monthPath}`,
             }))
-
+            
+    console.log(endpoints)
     try {
       const responses = await Promise.all(
         // Await responses fetch from every url in endpoints.url
@@ -197,6 +202,7 @@ export function useHiveStats() {
 
       // Rearrange json data order in order to displayed in a logical order
       stats.value = transformHiveResponse(combinedRawData)
+      
 
       // Save the fresh API response to localStorage with the key selected
       localStorage.setItem(
@@ -211,7 +217,6 @@ export function useHiveStats() {
     } catch (err) {
       if (err.message.includes('Rate limit') && isCacheValid) {
         stats.value = activeCache.data
-
         const currTimestamp = Date.now()
         const timeDifferenceMinutes = Math.floor(
           (currTimestamp - activeCache.timestamp) / (1000 * 60),
@@ -226,6 +231,7 @@ export function useHiveStats() {
 
         return true
       } else {
+        stats.value = null
         error.value = err.message || 'Failed to fetch player statistics.'
         return false
       }

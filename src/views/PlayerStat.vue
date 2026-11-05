@@ -106,14 +106,15 @@ const displayedMounts = computed(() => {
         }"
       >
         <div class="profile-icon">
+          <img v-if="!(stats.main?.equipped_avatar)" src="@/assets/default.png" alt="" class="size-24" />
           <img
-            v-if="stats.main?.equipped_avatar"
+            v-else
             :src="stats.main?.equipped_avatar.url"
             alt=""
             class="size-24"
           />
-          <img v-else src="@/assets/default.png" alt="" class="size-24" />
-        </div>
+          
+        </div>    
         <div class="profile-info mt-6 text-center sm:mt-0 sm:ml-6 sm:text-left">
           <h3 class="mb-2 text-3xl font-bold sm:text-4xl md:text-5xl lg:text-6xl">
             {{ stats.main?.username_cc || username }}
@@ -127,6 +128,7 @@ const displayedMounts = computed(() => {
       </section>
 
       <!-- Stats and cosmetics -->
+
       <section
         v-if="stats"
         class="stats-display flex w-full flex-col gap-10 px-[calc(10vw-16px)] pt-12 md:flex-row md:justify-around"
@@ -138,12 +140,12 @@ const displayedMounts = computed(() => {
               v-if="
                 gameCode !== 'main' &&
                 gameData &&
-                !Array.isArray(gameData) &&
                 typeof gameData === 'object'
               "
               class="game-card mb-10 rounded-2xl bg-neutral-100 p-6 shadow-xl dark:bg-zinc-700"
             >
-              <gameCard :title="getGameName(gameCode)">
+              <p v-if="gameData.length == 0">No statistics for {{ getGameName(gameCode) }}</p>
+              <gameCard v-else :title="getGameName(gameCode)">
                 <!-- Parkour worlds display (Differ from other gamemodes) -->
                 <div v-if="gameCode === 'parkour'" class="mt-3 space-y-6">
                   <div v-for="(courses, worldName) in gameData" :key="worldName">
@@ -168,7 +170,7 @@ const displayedMounts = computed(() => {
                 </div>
 
                 <!-- Oher gamemodes -->
-                <ul v-else class="mt-3">
+                <ul class="mt-3">
                   <li v-for="(val, label) in gameData" :key="label" class="pt-1">
                     <strong>{{ label }}:</strong>
                     {{ typeof val === 'number' ? val.toLocaleString() : val }}

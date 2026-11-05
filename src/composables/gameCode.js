@@ -4,7 +4,7 @@ const games = [
   { code: 'sky', name: 'SkyWars', combat: true },
   { code: 'sky-classic', name: 'SkyWars Classic', monthly: false, combat: true },
   { code: 'sky-kits', name: 'SkyWars Kits', monthly: false, combat: true },
-  { code: 'wars', name: 'Treasure Wars', combat: true },
+  { code: 'wars', name: 'Treasure Wars', monthly: false, combat: true },
   { code: 'murder', name: 'Murder Mystery' },
   { code: 'hide', name: 'Hide and Seek' },
   { code: 'dr', name: 'DeathRun' },
