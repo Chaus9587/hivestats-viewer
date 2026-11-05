@@ -205,7 +205,7 @@ const displayedMounts = computed(() => {
             title="Avatar"
             item-name="avatars"
             :total="stats.main?.avatar_unlocked?.length || 0"
-            :limit="iamgeLimit"
+            :limit="imageLimit"
             content-class="flex flex-wrap transition"
           >
             <img
