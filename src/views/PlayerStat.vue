@@ -205,15 +205,15 @@ const displayedMounts = computed(() => {
             title="Avatar"
             item-name="avatars"
             :total="stats.main?.avatar_unlocked?.length || 0"
-            :limit="avatarLimit"
+            :limit="iamgeLimit"
             content-class="flex flex-wrap transition"
           >
             <img
               v-for="(avatar, index) in displayedAvatars"
               :key="avatar.url || index"
               :src="avatar.url"
+              :alt="avatar.name"
               class="size-18 p-2"
-              alt="Unlocked avatar"
             />
           </CosmeticCard>
 
@@ -225,7 +225,7 @@ const displayedMounts = computed(() => {
             title="Hub Titles"
             item-name="hub titles"
             :total="stats.main?.hub_title_unlocked?.length || 0"
-            :limit="hubtitleLimit"
+            :limit="textLimit"
           >
             <p
               v-for="(title, idx) in displayedHubtitles"
