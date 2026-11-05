@@ -211,7 +211,19 @@ export function useHiveStats() {
     } catch (err) {
       if (err.message.includes('Rate limit') && isCacheValid) {
         stats.value = activeCache.data
-        error.value = `${err.message} Showing cached stats from the last hour.`
+
+        const currTimestamp = Date.now()
+        const timeDifferenceMinutes = Math.floor(
+          (currTimestamp - activeCache.timestamp) / (1000 * 60),
+        )
+
+        const ageText =
+          timeDifferenceMinutes < 1
+            ? 'less than a minute ago'
+            : `${timeDifferenceMinutes} ${timeDifferenceMinutes === 1 ? 'minute' : 'minutes'} ago`
+
+        error.value = `${err.message} Showing cached stats saved ${ageText}.`
+
         return true
       } else {
         error.value = err.message || 'Failed to fetch player statistics.'

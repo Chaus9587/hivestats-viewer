@@ -7,9 +7,14 @@ import CosmeticCard from '@/components/CosmeticCard.vue'
 
 const showAllAvatars = ref(false)
 const showAllHubtitles = ref(false)
+const showAllCostumes = ref(false)
+const showAllHats = ref(false)
+const showAllBackblings = ref(false)
+const showAllPets = ref(false)
+const showAllMounts = ref(false)
 
-const avatarLimit = 6
-const hubtitleLimit = 4
+const imageLimit = 6
+const textLimit = 4
 
 const {
   stats,
@@ -25,13 +30,38 @@ const {
 // Determine whether displaying all avatars or just the first 6 based on the showAllAvatars state
 const displayedAvatars = computed(() => {
   const avatars = stats.value?.main?.avatar_unlocked || []
-  return showAllAvatars.value ? avatars : avatars.slice(0, avatarLimit)
+  return showAllAvatars.value ? avatars : avatars.slice(0, imageLimit)
 })
 
 // Same for displaying hub titles
 const displayedHubtitles = computed(() => {
   const hubtitles = stats.value?.main?.hub_title_unlocked || []
-  return showAllHubtitles.value ? hubtitles : hubtitles.slice(0, hubtitleLimit)
+  return showAllHubtitles.value ? hubtitles : hubtitles.slice(0, textLimit)
+})
+
+const displayedCostumes = computed(() => {
+  const list = stats.value?.main?.costume_unlocked || []
+  return showAllCostumes.value ? list : list.slice(0, textLimit)
+})
+
+const displayedHats = computed(() => {
+  const list = stats.value?.main?.hat_unlocked || []
+  return showAllHats.value ? list : list.slice(0, imageLimit)
+})
+
+const displayedBackblings = computed(() => {
+  const list = stats.value?.main?.['cosmetics.backbling'] || []
+  return showAllBackblings.value ? list : list.slice(0, imageLimit)
+})
+
+const displayedPets = computed(() => {
+  const list = stats.value?.main?.pets || []
+  return showAllPets.value ? list : list.slice(0, textLimit)
+})
+
+const displayedMounts = computed(() => {
+  const list = stats.value?.main?.mounts || []
+  return showAllMounts.value ? list : list.slice(0, textLimit)
 })
 </script>
 
@@ -209,6 +239,93 @@ const displayedHubtitles = computed(() => {
               >
                 {{ segment.text }}
               </span>
+            </p>
+          </CosmeticCard>
+
+          <hr />
+
+          <!-- Hats Display -->
+          <CosmeticCard
+            v-model="showAllHats"
+            title="Hats"
+            item-name="hats"
+            :total="stats.main?.hat_unlocked?.length || 0"
+            :limit="imageLimit"
+            content-class="flex flex-wrap transition"
+          >
+            <img
+              v-for="(hat, idx) in displayedHats"
+              :key="hat.icon || idx"
+              :src="hat.icon"
+              :title="hat.name"
+              :alt="hat.name"
+              class="size-18 p-2"
+            />
+          </CosmeticCard>
+
+          <hr />
+
+          <!-- Backblings Display -->
+          <CosmeticCard
+            v-model="showAllBackblings"
+            title="Backblings"
+            item-name="backblings"
+            :total="stats.main?.['cosmetics.backbling']?.length || 0"
+            :limit="imageLimit"
+            content-class="flex flex-wrap transition"
+          >
+            <img
+              v-for="(backbling, idx) in displayedBackblings"
+              :key="backbling.icon || idx"
+              :src="backbling.icon"
+              :title="backbling.name"
+              :alt="backbling.name"
+              class="size-18 p-2"
+            />
+          </CosmeticCard>
+
+          <hr />
+
+          <!-- Costumes Display -->
+          <CosmeticCard
+            v-model="showAllCostumes"
+            title="Costumes"
+            item-name="costumes"
+            :total="stats.main?.costume_unlocked?.length || 0"
+            :limit="textLimit"
+          >
+            <p v-for="(costume, idx) in displayedCostumes" :key="idx" class="mb-1 font-medium">
+              {{ costume }}
+            </p>
+          </CosmeticCard>
+
+          <hr />
+
+          <!-- Pets Display -->
+          <CosmeticCard
+            v-model="showAllPets"
+            title="Pets"
+            item-name="pets"
+            :total="stats.main?.pets?.length || 0"
+            :limit="textLimit"
+          >
+            <p v-for="(pet, idx) in displayedPets" :key="idx" class="mb-1 font-medium">
+              {{ pet }}
+            </p>
+          </CosmeticCard>
+
+          <hr />
+
+          <!-- Mounts Display -->
+          <CosmeticCard
+            v-model="showAllMounts"
+            title="Mounts"
+            item-name="mounts"
+            :total="stats.main?.mounts?.length || 0"
+            :limit="textLimit"
+          >
+            <p v-for="(mount, idx) in displayedMounts" :key="idx" class="mb-1 font-medium">
+              {{ mount }}
             </p>
           </CosmeticCard>
         </div>

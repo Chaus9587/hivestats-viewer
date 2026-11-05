@@ -63,7 +63,8 @@ const toggleExpand = () => {
       :class="[contentClass, { 'hover:cursor-pointer': isExpandable }]"
       @click="toggleExpand"
     >
-      <slot></slot>
+      <slot v-if="total > 0"></slot>
+      <p v-else class="text-sm italic opacity-60">No {{ itemName }} unlocked</p>
 
       <div v-if="isExpandable" class="mt-3 w-full text-sm font-medium opacity-75">
         {{

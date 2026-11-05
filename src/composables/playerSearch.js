@@ -54,7 +54,7 @@ export function playerSearch() {
       console.log(`last: ${lastValidTimeframe.value}, selected: ${selectedTimeframe.value}`)
     }
   }
-  
+
   // Handle search in search bar
   const handleSearch = () => {
     const cleanName = username.value.trim()
