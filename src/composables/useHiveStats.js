@@ -1,8 +1,6 @@
 import { ref } from 'vue'
-import games from '@/composables/gameCode.js'
-import { STAT_SCHEMA, STATS_SCHEMAS_PARKOUR } from '@/composables/statsSchemas.js'
-
-const combatModes = ['ctf', 'sky', 'bed', 'sg', 'tw']
+import games from '@/composables/data/gameCode.js'
+import { STAT_SCHEMA, STATS_SCHEMAS_PARKOUR } from '@/composables/data/statsSchemas.js'
 
 const CACHE_TTL_MS = 60 * 60 * 1000
 
@@ -24,12 +22,22 @@ const formatParkourStats = (rawParkourData) => {
   const formattedWorlds = {}
 
   for (const { world, courses } of STATS_SCHEMAS_PARKOUR) {
+
+    // worldsData = { "volcano" : {...}, "rooftops": {...}, ...}
+    /* rawWorld = { 
+      "parkour_stars": 100, 
+      "Magma Meltdown" : {...},  
+      "Bone Basin" : {...},
+      ...
+      } */
     const rawWorld = worldsData[world]
     if (!rawWorld || typeof rawWorld !== 'object') continue
 
     const formattedCourses = {}
 
     for (const courseName of courses) {
+
+      
       const rawCourse = rawWorld[courseName]
       if (!rawCourse || typeof rawCourse !== 'object') continue
 
@@ -40,6 +48,8 @@ const formatParkourStats = (rawParkourData) => {
       const sortedTicks = Object.values(rawCourse.best_checkpoint_times || {}).sort((a, b) => a - b)
 
       const checkpoints = {}
+
+      // Throw checkpoints and summary to formattedCourses
       sortedTicks.forEach((ticks, idx) => {
         checkpoints[`Checkpoint ${idx + 1}`] = formatParkourTime(ticks)
       })
@@ -106,11 +116,16 @@ const formatTimeframe = (timeframe) => {
 
   const curr = new Date()
 
-  // follows playhive API's UTC time zone
+  // Follows playhive API's UTC time zone
   if (timeframe === 'current_month') {
-    return `/${curr.getUTCFullYear()}/${curr.getUTCMonth() + 1}`
+    const year = curr.getUTCFullYear()
+    const month = curr.getUTCMonth() + 1
+    return `/${year}/${month}`
   } else {
-    return `/${curr.getUTCFullYear()}/${curr.getUTCMonth()}`
+    // Rewind a year for fetching last year Dec stats
+    const year = curr.getUTCMonth() === 0 ? curr.getUTCFullYear() - 1: curr.getUTCFullYear()
+    const month = curr.getUTCMonth() === 0 ? 12 : curr.getUTCMonth()
+    return `/${year}/${month}`
   }
 }
 
@@ -139,7 +154,6 @@ export function useHiveStats() {
 
     // Check whether or not previously saved all-time/monthly API response for same player are expired
     const rawActiveCache = localStorage.getItem(activeCacheKey)
-    console.log(rawActiveCache)
     const activeCache = rawActiveCache ? JSON.parse(rawActiveCache) : null
     const isCacheValid = activeCache && Date.now() - activeCache.timestamp < CACHE_TTL_MS
 
@@ -147,14 +161,13 @@ export function useHiveStats() {
     if (activeCache && !isCacheValid) {
       localStorage.removeItem(activeCacheKey)
     }
+
     // Fetch player's all time stats from storage in order to filter what games they haven't played (for monthly stats search)
     const rawAllTimeCache = localStorage.getItem(allTimeCacheKey)
     const allTimeCache = rawAllTimeCache ? JSON.parse(rawAllTimeCache) : null
-
-  
     const allTimeData = allTimeCache?.data || null
 
-    // Put all-time/monthly API requests url into an array
+    // Put all-time/monthly API requests url(s) into an array
     const endpoints =
       timeframe === 'all'
         ? [{ code: 'all', url: `${BASE_URL}/game/all/all/${safeIdentifier}` }]
@@ -171,6 +184,7 @@ export function useHiveStats() {
     console.log(endpoints)
     try {
       const responses = await Promise.all(
+
         // Await responses fetch from every url in endpoints.url
         endpoints.map(async ({ code, url }) => {
           const response = await fetch(url)
@@ -231,7 +245,6 @@ export function useHiveStats() {
 
         return true
       } else {
-        stats.value = null
         error.value = err.message || 'Failed to fetch player statistics.'
         return false
       }

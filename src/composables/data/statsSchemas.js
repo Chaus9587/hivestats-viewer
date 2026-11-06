@@ -101,7 +101,12 @@ const STAT_SCHEMA = [
 const STATS_SCHEMAS_PARKOUR = [
   {
     world: 'Volcano',
-    courses: ['Magma Meltdown', 'Bone Basin', 'Wyrm Winding', 'Dungeon Dash', "Dragon's Dare"],
+    courses: [
+      'Magma Meltdown', 
+      'Bone Basin', 
+      'Wyrm Winding', 
+      'Dungeon Dash', 
+      "Dragon's Dare"],
   },
   {
     world: 'Rooftops',
@@ -125,7 +130,12 @@ const STATS_SCHEMAS_PARKOUR = [
   },
   {
     world: 'Jungle',
-    courses: ['Willow Whirl', 'Canopy Climb', 'Cavern Conundrum', 'Temple Turmoil', 'Jungle Jaunt'],
+    courses: [
+      'Willow Whirl', 
+      'Canopy Climb', 
+      'Cavern Conundrum', 
+      'Temple Turmoil', 
+      'Jungle Jaunt'],
   },
 ]
 

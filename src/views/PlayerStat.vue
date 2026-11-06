@@ -1,68 +1,41 @@
 <script setup>
-import { ref, computed } from 'vue'
-import { playerSearch } from '@/composables/playerSearch'
-import { parseMcText } from '@/composables/colorCode'
+
+import { usePlayerSearch } from '@/composables/usePlayerSearch'
+import { parseMcText } from '@/composables/data/colorCode'
 import gameCard from '@/components/GameCard.vue'
 import CosmeticCard from '@/components/CosmeticCard.vue'
 
-const showAllAvatars = ref(false)
-const showAllHubtitles = ref(false)
-const showAllCostumes = ref(false)
-const showAllHats = ref(false)
-const showAllBackblings = ref(false)
-const showAllPets = ref(false)
-const showAllMounts = ref(false)
-
-const imageLimit = 6
-const textLimit = 4
 
 const {
   stats,
   loading,
   error,
-  username,
+  searchQuery,
   selectedTimeframe,
+   
   handleSearch,
   handleTimeframeChange,
   getGameName,
-} = playerSearch()
 
-// Determine whether displaying all avatars or just the first 6 based on the showAllAvatars state
-const displayedAvatars = computed(() => {
-  const avatars = stats.value?.main?.avatar_unlocked || []
-  return showAllAvatars.value ? avatars : avatars.slice(0, imageLimit)
-})
+  imageLimit,
+  textLimit,
+  showAllAvatars,
+  showAllHubtitles,
+  showAllCostumes,
+  showAllHats,
+  showAllBackblings,
+  showAllPets,
+  showAllMounts,
+  displayedAvatars,
+  displayedHubtitles,
+  displayedCostumes,
+  displayedHats,
+  displayedBackblings,
+  displayedPets,
+  displayedMounts,
 
-// Same for displaying hub titles
-const displayedHubtitles = computed(() => {
-  const hubtitles = stats.value?.main?.hub_title_unlocked || []
-  return showAllHubtitles.value ? hubtitles : hubtitles.slice(0, textLimit)
-})
+} = usePlayerSearch() 
 
-const displayedCostumes = computed(() => {
-  const list = stats.value?.main?.costume_unlocked || []
-  return showAllCostumes.value ? list : list.slice(0, textLimit)
-})
-
-const displayedHats = computed(() => {
-  const list = stats.value?.main?.hat_unlocked || []
-  return showAllHats.value ? list : list.slice(0, imageLimit)
-})
-
-const displayedBackblings = computed(() => {
-  const list = stats.value?.main?.['cosmetics.backbling'] || []
-  return showAllBackblings.value ? list : list.slice(0, imageLimit)
-})
-
-const displayedPets = computed(() => {
-  const list = stats.value?.main?.pets || []
-  return showAllPets.value ? list : list.slice(0, textLimit)
-})
-
-const displayedMounts = computed(() => {
-  const list = stats.value?.main?.mounts || []
-  return showAllMounts.value ? list : list.slice(0, textLimit)
-})
 </script>
 
 <template>
@@ -73,7 +46,7 @@ const displayedMounts = computed(() => {
       class="search-bar my-10 flex flex-row items-center justify-center sm:my-16"
     >
       <input
-        v-model="username"
+        v-model="searchQuery"
         type="text"
         placeholder="Enter Xbox Gamertag..."
         required
@@ -146,6 +119,7 @@ const displayedMounts = computed(() => {
             >
               <p v-if="gameData.length == 0">No statistics for {{ getGameName(gameCode) }}</p>
               <gameCard v-else :title="getGameName(gameCode)">
+
                 <!-- Parkour worlds display (Differ from other gamemodes) -->
                 <div v-if="gameCode === 'parkour'" class="mt-3 space-y-6">
                   <div v-for="(courses, worldName) in gameData" :key="worldName">
@@ -170,7 +144,7 @@ const displayedMounts = computed(() => {
                 </div>
 
                 <!-- Oher gamemodes -->
-                <ul class="mt-3">
+                <ul v-else class="mt-3">
                   <li v-for="(val, label) in gameData" :key="label" class="pt-1">
                     <strong>{{ label }}:</strong>
                     {{ typeof val === 'number' ? val.toLocaleString() : val }}
@@ -200,7 +174,7 @@ const displayedMounts = computed(() => {
             </select>
           </div>
           <hr />
-
+        
           <!-- Avatar Display -->
           <CosmeticCard
             v-model="showAllAvatars"
