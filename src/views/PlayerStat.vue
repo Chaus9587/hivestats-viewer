@@ -117,7 +117,7 @@ const {
               "
               class="game-card mb-10 rounded-2xl bg-neutral-100 p-6 shadow-xl dark:bg-zinc-700"
             >
-              <p v-if="gameData.length == 0">No statistics for {{ getGameName(gameCode) }}</p>
+              <p v-if="gameData.length == 0" class="opacity-60 italic">No statistics for {{ getGameName(gameCode) }}</p>
               <gameCard v-else :title="getGameName(gameCode)">
 
                 <!-- Parkour worlds display (Differ from other gamemodes) -->

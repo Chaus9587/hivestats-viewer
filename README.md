@@ -24,19 +24,24 @@ This is a Web application for checking profiles statistics in Minecraft Bedrock 
 ```text
 hivestats-viewer/
 ├── public/
-│   ├── _redirects               # Netlify SPA rewrite rule (/* /index.html 200)
+│   ├── _redirects                  # Netlify SPA rewrite rule (/* /index.html 200)
 │   └── favicon.ico
 ├── src/
-│   ├── assets/                  # SVG icons and static assets
+│   ├── assets/                     # SVG icons and static assets
 │   ├── components/
-│   │   ├── Card.vue             # Collapsible game mode statistics card
-│   │   ├── CosmeticCard.vue     # Reusable expandable wrapper for cosmetics
-│   │   └── PlayerStat.vue       # Main player search & stats dashboard view
+│   │   ├── GameCard.vue            # Collapsible game mode statistics card
+│   │   └── CosmeticCard.vue        # Reusable expandable wrapper for cosmetics
+│   ├── views/
+│   │   ├── HomeView.vue            
+│   │   └── PlayerStat.vue          # Main player search & stats dashboard view
 │   ├── composables/
-│   │   ├── gameCode.js          # Game metadata, combat flags, & monthly support
-│   │   ├── parseMcText.js       # Minecraft Bedrock color code & hex parser
-│   │   ├── useHiveStats.js      # API fetching, stat schemas, Parkour parser & caching
-│   │   └── usePlayerSearch.js   # URL routing, search state, & cosmetic pagination
+│   │   ├── Data/
+│   │   │   ├── gameCode.js         # Game metadata, combat flags, & monthly flags
+│   │   │   ├── colorCode.js        # Minecraft Bedrock color code & hex parser
+│   │   │   └── statsSchemas.js     # Formatting template for player's raw data
+│   │   ├── handleCosmetics.js      # Expandable cosmetics menus handler         
+│   │   ├── useHiveStats.js         # API fetching, stat schemas, Parkour parser & caching
+│   │   └── usePlayerSearch.js      # URL routing, search state, & cosmetic pagination
 │   ├── App.vue
 │   └── main.js
 ├── index.html
